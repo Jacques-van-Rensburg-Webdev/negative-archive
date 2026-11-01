@@ -1071,6 +1071,82 @@ a.chip { color: var(--color-text); text-decoration: none; }
   text-decoration: none;
 }
 
+/* Meter: metering photo (a button: tap to place the spot), spot ring, readout bar */
+.meter-photo {
+  position: relative;
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  overflow: hidden;
+  background: var(--color-placeholder);
+  cursor: crosshair;
+}
+.meter-photo-image { display: block; width: 100%; height: auto; }
+.meter-spot {
+  position: absolute;
+  width: var(--size-tap);
+  height: var(--size-tap);
+  border: var(--border-width-thick) solid var(--color-primary);
+  border-radius: var(--radius-full);
+  box-shadow: 0 0 0 var(--border-width) var(--color-bg);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.meter-readout {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-1);
+  height: var(--space-4);
+  padding-inline: var(--space-2);
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  background: var(--color-surface);
+}
+.meter-ev {
+  font-size: var(--text-xl);
+  line-height: var(--leading-xl);
+  font-weight: var(--weight-bold);
+}
+.meter-answer {
+  font-size: var(--text-display);
+  line-height: var(--leading-display);
+}
+
+/* Meter: zone scale, 11 cells from Zone 0 (black) to X (white); cells with readings are ringed */
+.zone-scale {
+  display: grid;
+  grid-template-columns: repeat(11, minmax(0, 1fr));
+  gap: var(--space-0-5);
+}
+.zone-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: var(--size-tap);
+  padding-bottom: var(--space-0-5);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  color: var(--color-text);
+}
+.zone-cell.has-reading { box-shadow: inset 0 0 0 var(--border-width-thick) var(--color-primary); }
+.zone-cell-marks { font-weight: var(--weight-bold); }
+.zone-0 { background: var(--zone-0); }
+.zone-1 { background: var(--zone-1); }
+.zone-2 { background: var(--zone-2); }
+.zone-3 { background: var(--zone-3); }
+.zone-4 { background: var(--zone-4); }
+.zone-5 { background: var(--zone-5); }
+.zone-6 { background: var(--zone-6); color: var(--color-bg); }
+.zone-7 { background: var(--zone-7); color: var(--color-bg); }
+.zone-8 { background: var(--zone-8); color: var(--color-bg); }
+.zone-9 { background: var(--zone-9); color: var(--color-bg); }
+.zone-10 { background: var(--zone-10); color: var(--color-bg); }
+
 /* tests.html results */
 .test-list {
   display: flex;

@@ -42,6 +42,10 @@ export function shotFields(shot, roll, position) {
     lensId: shot.lensId || roll.defaultLensId,
     filmStock: roll.filmStock || undefined,
     category: shot.category || undefined,
+    aperture: shot.aperture || undefined,
+    shutter: shot.shutter || undefined,
+    ev: shot.meter?.ev,
+    meterMode: shot.meter?.mode,
     shotId: shot.id,
     refThumbBlobId: shot.refThumbBlobId || shot.refPhotoBlobId, // shown until a scan is attached
   };

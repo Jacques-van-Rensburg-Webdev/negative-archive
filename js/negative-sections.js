@@ -80,7 +80,18 @@ function actionText(n) {
   return n.actionComplete ? 'Edit · done' : 'Edit · to do';
 }
 
-/** Gear, Review, Files, Output and Notes sections. names: { camera, lens }. */
+// Aperture, shutter and the meter reading; nothing when none were recorded
+function exposureSection(n) {
+  if (!n.aperture && !n.shutter && n.ev === undefined && !n.meterMode) return [];
+  return [section('Exposure settings', [
+    ['Aperture', n.aperture, true],
+    ['Shutter', n.shutter, true],
+    ['EV', n.ev === undefined ? undefined : n.ev.toFixed(1), true],
+    ['Metered', n.meterMode],
+  ])];
+}
+
+/** Gear, Exposure settings, Review, Files, Output and Notes sections. names: { camera, lens }. */
 export function detailSections(n, roll, names) {
   const notes = el('section', 'span-4 stack-1');
   notes.append(el('h3', 'section-label', 'Notes'), el('p', `card${n.notes ? '' : ' text-muted'}`, n.notes || 'No notes'));
@@ -91,6 +102,7 @@ export function detailSections(n, roll, names) {
       ['Film', n.filmStock || roll?.filmStock],
       ['Lab no.', roll?.labNumber, true],
     ]),
+    ...exposureSection(n),
     section('Review', [
       ['Focus', n.focus],
       ['Exposure', n.exposure],

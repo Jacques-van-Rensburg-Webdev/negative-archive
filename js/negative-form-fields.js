@@ -1,7 +1,7 @@
 // Markup and value reading for the Add / edit form. Every spreadsheet column has a field.
 // Controls follow js/controls.js: chips (aria-pressed), segmented (role=radio), switches.
 
-import { CATEGORIES, EXPOSURE, FOCUS, TRI } from './schema.js';
+import { CATEGORIES, EXPOSURE, FOCUS, METER_MODES, TRI } from './schema.js';
 
 import { filmFieldHtml } from './film-field.js';
 import { NEW_OPTION } from './gear.js';
@@ -84,6 +84,11 @@ export function formHtml(v, lists, mode) {
       ${select('cameraId', 'Camera', lists.cameras, v.cameraId, { addNew: true })}
       ${select('lensId', 'Lens', lists.lenses, v.lensId, { addNew: true })}
       ${filmFieldHtml(v.filmStock, lists.yourStocks)}`, mode === 'add' ? 'carried over from roll' : '')}
+    ${section('Exposure settings', `
+      ${input('aperture', 'Aperture', v.aperture, { mono: true, span: 'span-2', placeholder: 'e.g. f/8' })}
+      ${input('shutter', 'Shutter', v.shutter, { mono: true, span: 'span-2', placeholder: 'e.g. 1/125' })}
+      ${input('ev', 'EV', v.ev, { mono: true, span: 'span-2', mode: 'decimal', placeholder: 'e.g. 12.3' })}
+      ${segmented('meterMode', 'Metered', METER_MODES.map((m) => [m, m]), v.meterMode)}`)}
     ${section('Scan', `
       ${switchRow('digitized', 'Digitized', v.digitized)}
       ${segmented('scanSize', 'Scan size', [['L', 'Large'], ['S', 'Small']], v.scanSize, 'span-2')}

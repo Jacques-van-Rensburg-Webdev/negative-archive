@@ -5,6 +5,8 @@
 import { getDb } from './db.js';
 import { blobUrl, removeImages, saveImage } from './files.js';
 import { newGearItem } from './gear.js';
+import { saveDraft } from './shoot-draft.js';
+import { applyReading, restoreDraft } from './shoot-exposure.js';
 import { emptyStateHtml, readShootForm, rollCardHtml, shootFormHtml, shotListHtml } from './shoot-controls.js';
 import {
   apertureStops, deleteShot, lightingItems, logShot, nextShotNumber, position, rollsInCamera, shotsForRoll, unloadRoll, updateShot,
@@ -31,6 +33,8 @@ function render({ query, setActions }) {
     shotNumber: nextShotNumber(shots),
     lensId: roll.defaultLensId,
     aperture: sticky.aperture,
+    shutter: sticky.shutter,
+    meter: undefined,
     light: sticky.light,
     filter: sticky.filter || 'None',
     category: sticky.category,
@@ -49,7 +53,15 @@ function render({ query, setActions }) {
     roll = rolls.find((r) => r.id === query.get('roll')) || rolls[0];
     const cameras = new Map((await db.getAll('cameras')).map((c) => [c.id, c.name]));
     [shots, lenses, items] = await Promise.all([shotsForRoll(db, roll.id), db.getAll('lenses'), lightingItems(db)]);
+    const kept = restoreDraft(roll.id, shots);
+    if (kept) ({ form, pendingRef, editing } = kept);
     if (!form) form = await freshForm((await db.get('meta', stickyKey(roll.id)))?.value || {});
+    const metered = applyReading(roll.id, form);
+    if (metered) {
+      form = metered.form;
+      pendingRef = metered.refFile || pendingRef;
+      message = metered.message;
+    }
 
     const sync = document.createElement('a');
     sync.className = 'button button-sm';
@@ -84,6 +96,11 @@ function render({ query, setActions }) {
       event.currentTarget.setAttribute('aria-expanded', String(!panel.hidden));
     });
     root.querySelector('[data-field="lensId"]').addEventListener('change', () => { keep(); paint(); });
+    root.querySelector('[data-meter]').addEventListener('click', () => {
+      keep();
+      saveDraft({ rollId: roll.id, form, pendingRef, editingId: editing?.id });
+      window.location.hash = `#/shoot/meter?roll=${encodeURIComponent(roll.id)}`;
+    });
     root.querySelector('[data-add-lens]').addEventListener('click', async () => {
       const name = window.prompt('Name of the new lens (e.g. Nikkor 50mm f/1.4)')?.trim();
       if (!name) return;
@@ -131,7 +148,7 @@ function render({ query, setActions }) {
   const shotFrom = async (values) => {
     const shot = {
       rollId: roll.id, shotNumber: form.shotNumber, lensId: values.lensId || roll.defaultLensId,
-      aperture: values.aperture, light: values.light, filter: values.filter, category: values.category,
+      aperture: values.aperture, shutter: values.shutter, meter: form.meter, light: values.light, filter: values.filter, category: values.category,
       lighting: values.lighting.on ? { items: values.lighting.items, role: values.lighting.role, setup: values.lighting.setup } : undefined,
       placeName: values.place, note: values.note,
     };
@@ -151,7 +168,7 @@ function render({ query, setActions }) {
     const { lensId, note, ...sticky } = values;
     await db.put('meta', { key: stickyKey(roll.id), value: sticky });
     pendingRef = null;
-    form = { ...form, ...values, lensId: roll.defaultLensId, note: undefined, shotNumber: saved.shotNumber + 1 };
+    form = { ...form, ...values, lensId: roll.defaultLensId, note: undefined, meter: undefined, shotNumber: saved.shotNumber + 1 };
     paint(`Logged shot ${saved.shotNumber}.`);
   }
 
@@ -160,7 +177,7 @@ function render({ query, setActions }) {
     editing = shots.find((s) => s.id === id);
     pendingRef = null;
     form = {
-      ...form, shotNumber: editing.shotNumber, lensId: editing.lensId, aperture: editing.aperture, light: editing.light,
+      ...form, shotNumber: editing.shotNumber, lensId: editing.lensId, aperture: editing.aperture, shutter: editing.shutter, meter: editing.meter, light: editing.light,
       filter: editing.filter, category: editing.category, place: editing.placeName, note: editing.note,
       lighting: editing.lighting ? { on: true, items: editing.lighting.items || [], role: editing.lighting.role, setup: editing.lighting.setup } : { on: false, items: [] },
     };

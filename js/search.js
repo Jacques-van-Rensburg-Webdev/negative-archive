@@ -24,7 +24,7 @@ export function buildEntries({ negatives, rolls, cameras, lenses, shots = [] }) 
     const lighting = shot?.lighting ? { added: true, items: shot.lighting.items || [] } : { added: false, items: [] };
     const text = normalise([
       n.subject, n.category, n.location, n.notes, n.id, n.rollId, roll?.labNumber, n.scanFile, n.editedFile,
-      film, camera, lens, shot?.note, lighting.items.join(' '), shot?.lighting?.setup,
+      film, camera, lens, n.aperture, n.shutter, shot?.note, lighting.items.join(' '), shot?.lighting?.setup,
     ].filter(Boolean).join(' '));
     const month = /^\d{4}-\d{2}/.test(n.dateTaken || '') ? n.dateTaken.slice(0, 7) : '';
     return { negative: n, text, film, camera, cameraId: n.cameraId || '', lens, lensId: n.lensId || '', month, lighting };

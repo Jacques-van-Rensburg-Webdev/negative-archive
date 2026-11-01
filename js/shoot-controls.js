@@ -1,5 +1,6 @@
 // Markup and value reading for the Shoot tab's logging form and shot list.
 
+import { SHUTTER_CHIPS, exposureRowHtml, withValue } from './shoot-exposure.js';
 import { LIGHT, FILTERS, LIGHTING_ROLES, SHOT_TYPES, lightingText } from './shots.js';
 
 const esc = (value) => String(value ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -25,6 +26,7 @@ export function emptyStateHtml() {
         <span class="text-sm text-muted">Load a roll to start logging shots. Everything is saved on this phone, also offline.</span>
       </div>
       <a class="button button-primary button-block" href="#/shoot/load">Load a new roll</a>
+      <a class="button button-secondary button-block" href="#/shoot/meter">Use the meter</a>
     </section>`;
 }
 
@@ -77,7 +79,9 @@ export function shootFormHtml({ roll, form, lenses, lensName, apertures, items, 
     </section>
 
     <section class="span-4 stack-3">
-      ${chipGroup('aperture', 'Aperture', apertures, form.aperture, { mono: true })}
+      ${exposureRowHtml(form)}
+      ${chipGroup('aperture', 'Aperture', withValue(apertures, form.aperture), form.aperture, { mono: true })}
+      ${chipGroup('shutter', 'Shutter', withValue(SHUTTER_CHIPS, form.shutter), form.shutter, { mono: true })}
       ${chipGroup('light', 'Light', LIGHT, form.light)}
       ${chipGroup('filter', 'Filter', FILTERS, form.filter)}
       ${chipGroup('category', 'Type', SHOT_TYPES, form.category)}
@@ -150,7 +154,7 @@ export function shootFormHtml({ roll, form, lenses, lensName, apertures, items, 
 /** "This roll" list, newest first. Each row is a button that loads the shot into the form. */
 export function shotListHtml(shots, lensNames) {
   const rows = [...shots].reverse().map((s) => {
-    const line1 = [lensNames.get(s.lensId), s.aperture, s.light, s.filter && s.filter !== 'None' ? `${s.filter} filter` : ''].filter(Boolean).join(' · ');
+    const line1 = [lensNames.get(s.lensId), s.aperture, s.shutter, s.light, s.filter && s.filter !== 'None' ? `${s.filter} filter` : ''].filter(Boolean).join(' · ');
     const line2 = s.lighting ? lightingText(s.lighting) : 'Natural light';
     return `
       <button class="grid grid-inner list-row shot-row" type="button" data-shot="${esc(s.id)}" aria-label="Shot ${s.shotNumber}, change">
@@ -179,6 +183,7 @@ export function readShootForm(root) {
   return {
     lensId: single('lensId'),
     aperture: single('aperture'),
+    shutter: single('shutter'),
     light: single('light'),
     filter: single('filter'),
     category: single('category'),

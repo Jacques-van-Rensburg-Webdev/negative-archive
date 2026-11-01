@@ -101,9 +101,11 @@ function render({ query }) {
       s.calibration = Math.max(-2, Math.min(2, round1(s.calibration + d / 3)));
       await db.put('meta', { key: CALIBRATION_KEY, value: s.calibration });
     });
-    const input = root.querySelector('[data-photo-input]');
-    root.querySelectorAll('[data-take-photo]').forEach((b) => b.addEventListener('click', () => input.click()));
-    input.addEventListener('change', () => { if (input.files[0]) takePhoto(input.files[0]); });
+    const camera = root.querySelector('[data-photo-input]:not([data-library])');
+    const library = root.querySelector('[data-photo-input][data-library]');
+    root.querySelectorAll('[data-take-photo]').forEach((b) => b.addEventListener('click', () => camera.click()));
+    root.querySelector('[data-choose-photo]')?.addEventListener('click', () => library.click());
+    [camera, library].forEach((input) => input.addEventListener('change', () => { if (input.files[0]) takePhoto(input.files[0]); }));
     root.querySelector('[data-photo]')?.addEventListener('click', (event) => {
       const box = event.currentTarget.getBoundingClientRect();
       const x = event.clientX ? (event.clientX - box.left) / box.width : 0.5;

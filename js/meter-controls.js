@@ -39,9 +39,10 @@ export function settingsHtml({ iso, isoNote, filter, filterStops }) {
     </section>`;
 }
 
-/** Take button, or the photo with the spot ring and readout, plus Average / Spot. */
+/** Take / Choose buttons, or the photo with the spot ring and readout, plus Average / Spot. */
 export function photoHtml({ photo, mode, spot, readout }) {
-  const input = '<input type="file" accept="image/*" capture="environment" hidden data-photo-input>';
+  const input = `<input type="file" accept="image/*" capture="environment" hidden data-photo-input>
+    <input type="file" accept="image/*" hidden data-photo-input data-library>`;
   if (!photo) {
     return `
       <section class="span-4 stack-1">
@@ -50,6 +51,7 @@ export function photoHtml({ photo, mode, spot, readout }) {
           ${CAMERA_ICON}<span class="text-bold">Take metering photo</span>
           <span class="text-xs text-muted">The phone's exposure gives the reading · not saved unless you add it</span>
         </button>
+        <button class="button button-secondary button-block" type="button" data-choose-photo>Choose from Photos</button>
       </section>`;
   }
   return `

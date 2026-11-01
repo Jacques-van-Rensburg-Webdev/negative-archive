@@ -2,17 +2,23 @@
 // Take a photo, or pick one from Photos, and the page shows what it could read. Pushed screen.
 
 import { evFromExif } from './exposure.js';
-import { readFileExposure } from './exif.js';
+import { fileKind, readExifTags, readExposure } from './exif.js';
 
 const esc = (value) => String(value ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const row = (key, value) => `<div class="field-row"><span class="field-key">${key}</span><span class="text-mono">${esc(value)}</span></div>`;
 
-function result(file, exif) {
-  const head = [row('File', `${file.type || 'unknown type'} · ${Math.round(file.size / 1024)} KB`)];
-  if (!exif) {
-    return `${head.join('')}
-      <div class="field-row"><span class="field-key">EXIF</span><span class="text-bold">Not found</span></div>`;
-  }
+// What the file is and what EXIF it has, so one try shows why the meter can or can't read it
+function result(file, buffer) {
+  const { tags, found } = readExifTags(buffer);
+  const exif = readExposure(buffer);
+  const head = [
+    row('File', `${file.type || 'no type'} · ${Math.round(file.size / 1024)} KB`),
+    row('Name', file.name),
+    row('Really', fileKind(buffer)),
+    row('EXIF block', found ? `yes (${found})` : 'none'),
+    row('Fields', Object.keys(tags).join(', ') || 'none'),
+  ];
+  if (!exif) return head.join('');
   const t = exif.exposureTime;
   return [
     ...head,
@@ -49,9 +55,10 @@ function render() {
   root.querySelectorAll('input[type="file"]').forEach((input) => input.addEventListener('change', async () => {
     const file = input.files[0];
     if (!file) return;
-    const exif = await readFileExposure(file);
+    const buffer = await file.arrayBuffer();
+    const exif = readExposure(buffer);
     const box = root.querySelector('[data-result]');
-    box.innerHTML = result(file, exif);
+    box.innerHTML = result(file, buffer);
     box.hidden = false;
     root.querySelector('[data-status]').textContent = exif
       ? `Exposure found (${input.hasAttribute('capture') ? 'camera' : 'Photos'}). The meter can use it.`

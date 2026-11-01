@@ -1,5 +1,5 @@
-// Reads the exposure a phone camera recorded in a JPEG's EXIF: shutter, f-number, ISO,
-// exposure bias, brightness (APEX) and lens. Returns null for files without EXIF (HEIC, stripped).
+// Reads the exposure a phone camera recorded in a photo's EXIF: shutter, f-number, ISO,
+// exposure bias, brightness (APEX) and lens. JPEG headers first, then a scan (HEIC). Null when stripped.
 
 const TAGS = {
   0x8769: 'exifIfd',
@@ -44,22 +44,60 @@ function readIfd(view, tiff, ifdOffset, little, out) {
   }
 }
 
-/** { exposureTime, fNumber, iso, bias?, brightness?, lens? } from a JPEG ArrayBuffer, or null. */
-export function readExposure(buffer) {
-  try {
-    const view = new DataView(buffer);
-    const tiff = tiffStart(view);
-    if (tiff === null) return null;
-    const little = view.getUint16(tiff) === 0x4949;
-    const out = {};
-    readIfd(view, tiff, view.getUint32(tiff + 4, little), little, out);
-    if (out.exifIfd) readIfd(view, tiff, out.exifIfd, little, out);
-    delete out.exifIfd;
-    const valid = (v) => Number.isFinite(v) && v > 0;
-    return valid(out.exposureTime) && valid(out.fNumber) && valid(out.iso) ? out : null;
-  } catch {
-    return null;
+/**
+ * Fallback for HEIC and anything else: the first "Exif\0\0" followed by a TIFF header
+ * (II*\0 or MM\0*). HEIC keeps its EXIF item that way, after a 4-byte offset.
+ */
+function scanForTiff(view) {
+  const bytes = new Uint8Array(view.buffer, view.byteOffset, view.byteLength);
+  for (let i = 0; i + 10 <= bytes.length; i += 1) {
+    if (bytes[i] !== 0x45 || bytes[i + 1] !== 0x78 || bytes[i + 2] !== 0x69 || bytes[i + 3] !== 0x66 || bytes[i + 4] || bytes[i + 5]) continue;
+    const order = view.getUint16(i + 6);
+    const magic = view.getUint16(i + 8, order === 0x4949);
+    if ((order === 0x4949 || order === 0x4d4d) && magic === 42) return i + 6;
   }
+  return null;
+}
+
+/** What kind of file the bytes say it is. */
+export function fileKind(buffer) {
+  const view = new DataView(buffer);
+  if (view.byteLength >= 2 && view.getUint16(0) === 0xffd8) return 'JPEG';
+  if (view.byteLength >= 12 && view.getUint32(4) === 0x66747970) { // 'ftyp'
+    const brand = String.fromCharCode(...new Uint8Array(buffer, 8, 4));
+    return /hei|mif/.test(brand) ? `HEIC (${brand})` : `ISO media (${brand})`;
+  }
+  if (view.byteLength >= 4 && view.getUint32(0) === 0x89504e47) return 'PNG';
+  return 'unknown';
+}
+
+/** Every tag it could read, plus where the EXIF block was: { tags, found: 'JPEG header' | 'scan' | null }. */
+export function readExifTags(buffer) {
+  const view = new DataView(buffer);
+  let tiff = null;
+  let found = null;
+  try { tiff = tiffStart(view); } catch { tiff = null; }
+  if (tiff !== null) found = 'JPEG header';
+  else {
+    tiff = scanForTiff(view);
+    if (tiff !== null) found = 'scan';
+  }
+  const tags = {};
+  if (tiff === null) return { tags, found };
+  try {
+    const little = view.getUint16(tiff) === 0x4949;
+    readIfd(view, tiff, view.getUint32(tiff + 4, little), little, tags);
+    if (tags.exifIfd) readIfd(view, tiff, tags.exifIfd, little, tags);
+  } catch { /* keep what was read */ }
+  delete tags.exifIfd;
+  return { tags, found };
+}
+
+/** { exposureTime, fNumber, iso, bias?, brightness?, lens? } from a JPEG or HEIC ArrayBuffer, or null. */
+export function readExposure(buffer) {
+  const { tags } = readExifTags(buffer);
+  const valid = (v) => Number.isFinite(v) && v > 0;
+  return valid(tags.exposureTime) && valid(tags.fNumber) && valid(tags.iso) ? tags : null;
 }
 
 export const readFileExposure = async (file) => readExposure(await file.arrayBuffer());

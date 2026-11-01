@@ -1,0 +1,301 @@
+/* PDF export pages (print.html). White paper, ink and rules only, so pages read in greyscale.
+   Sizes come from the print tokens in tokens.css; the phone grid doesn't apply here. */
+
+*, *::before, *::after { box-sizing: border-box; }
+* { margin: 0; }
+
+body {
+  --page-width: var(--print-a4-width);
+  --page-height: var(--print-a4-height);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-family: var(--font-family);
+  font-size: var(--print-text-sm);
+  line-height: var(--print-leading);
+}
+body.paper-letter {
+  --page-width: var(--print-letter-width);
+  --page-height: var(--print-letter-height);
+}
+
+/* ---------- Screen only: the bar above the sheets ---------- */
+.print-bar {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--size-row);
+  padding: var(--space-1) var(--grid-margin);
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+.print-bar-status {
+  flex: 1;
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  color: var(--color-text-muted);
+}
+.print-bar-button {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--size-tap);
+  padding-inline: var(--space-2);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  text-decoration: none;
+}
+.print-bar-button.is-primary {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+.print-bar-button:disabled { opacity: 0.5; }
+
+.sheets {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+}
+
+/* ---------- One sheet = one printed page ---------- */
+.sheet {
+  display: flex;
+  flex-direction: column;
+  width: var(--page-width);
+  height: var(--page-height);
+  padding: var(--print-margin-top) var(--print-margin-side) var(--print-margin-bottom);
+  overflow: hidden;
+  background: var(--color-paper);
+}
+.sheet-foot {
+  display: flex;
+  justify-content: space-between;
+  margin-top: auto;
+  padding-top: var(--print-space-3);
+  border-top: var(--border-width) solid var(--color-rule);
+  font-size: var(--print-text-xs);
+  color: var(--color-ink-muted);
+}
+
+/* Shared print type */
+.p-label {
+  font-size: var(--print-text-xs);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+}
+.p-muted { color: var(--color-ink-muted); }
+.p-small { font-size: var(--print-text-xs); }
+.p-mono { font-family: var(--font-mono); }
+.p-bold { font-weight: var(--weight-bold); }
+.p-nowrap { white-space: nowrap; }
+.p-gap-2 { margin-top: var(--print-space-2); }
+.p-gap-3 { margin-top: var(--print-space-3); }
+.p-h2 {
+  margin: var(--print-space-10) 0 var(--print-space-3);
+  font-size: var(--print-text-md);
+  font-weight: var(--weight-heavy);
+}
+
+/* ---------- Cover ---------- */
+.cover-top {
+  display: flex;
+  justify-content: space-between;
+}
+.cover-title {
+  margin-top: var(--print-space-10);
+  font-size: var(--print-text-xl);
+  line-height: var(--print-leading-tight);
+  font-weight: var(--weight-heavy);
+  letter-spacing: var(--tracking-title);
+}
+.cover-sub {
+  margin-top: var(--print-space-3);
+  font-size: var(--print-text-md);
+  color: var(--color-ink-muted);
+}
+.cover-totals {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-top: var(--print-space-10);
+  border-top: var(--border-width) solid var(--color-rule);
+  border-bottom: var(--border-width) solid var(--color-rule);
+}
+.cover-total { padding: var(--print-space-3) 0; }
+.cover-total-value {
+  font-size: var(--print-text-lg);
+  font-weight: var(--weight-heavy);
+  line-height: var(--print-leading-tight);
+}
+.cover-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--print-space-10);
+}
+.bar-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--print-space-3);
+}
+.bar-head {
+  display: flex;
+  justify-content: space-between;
+}
+.bar {
+  height: var(--print-space-2);
+  margin-top: var(--print-space-1);
+  background: var(--color-pdf-frame);
+}
+.bar > span {
+  display: block;
+  width: var(--bar, 0%);
+  height: 100%;
+  background: var(--color-ink);
+}
+
+/* ---------- Tables (roll index, frame index) ---------- */
+.p-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.p-table th,
+.p-table td {
+  padding: var(--print-space-2) var(--print-space-1);
+  border-bottom: var(--border-width) solid var(--color-rule);
+  text-align: left;
+  vertical-align: top;
+}
+.p-table th {
+  border-bottom-color: var(--color-ink);
+  font-weight: var(--weight-bold);
+}
+.p-table th:first-child,
+.p-table td:first-child { padding-left: 0; }
+.p-table th:last-child,
+.p-table td:last-child { padding-right: 0; }
+.p-table.is-compact {
+  font-size: var(--print-text-xs);
+  line-height: var(--print-leading-tight);
+}
+/* Notes get a fair share of a frame index row; other text columns share the rest */
+.p-table .p-notes { width: 30%; }
+.p-table.has-files .p-notes { width: 20%; }
+.p-table.is-compact td,
+.p-table.is-compact th { padding-block: var(--print-space-1); }
+
+/* ---------- Contact sheet ---------- */
+.contact-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: var(--print-space-6);
+  padding-bottom: var(--print-space-3);
+  border-bottom: var(--border-width) solid var(--color-ink);
+}
+.contact-roll {
+  font-family: var(--font-mono);
+  font-size: var(--print-text-lg);
+  line-height: var(--print-leading-tight);
+}
+.contact-meta { text-align: right; }
+.strips {
+  display: flex;
+  flex-direction: column;
+  gap: var(--print-space-3);
+  margin-top: var(--print-space-4);
+}
+.strip-row {
+  display: grid;
+  grid-template-columns: var(--print-strip-label) minmax(0, 1fr);
+  align-items: center;
+}
+.strip-number {
+  font-family: var(--font-mono);
+  font-size: var(--print-text-xs);
+  color: var(--color-ink-muted);
+}
+.strip-frames {
+  display: grid;
+  grid-template-columns: repeat(var(--frames-per-strip, 6), minmax(0, 1fr));
+  gap: var(--print-space-2);
+}
+.strip-frame {
+  display: flex;
+  flex-direction: column;
+  gap: var(--print-space-1);
+}
+.strip-image {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: var(--frame-aspect, 3 / 2);
+  overflow: hidden;
+  background: var(--color-pdf-frame);
+  font-family: var(--font-mono);
+  font-size: var(--print-text-xs);
+  color: var(--color-ink-muted);
+}
+.strip-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: grayscale(1);
+}
+.strip-caption {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--print-space-1);
+  font-family: var(--font-mono);
+  font-size: var(--print-text-xs);
+  line-height: var(--print-leading-tight);
+  white-space: nowrap;
+}
+.strip-id {
+  font-family: var(--font-mono);
+  font-size: var(--print-text-xs);
+  line-height: var(--print-leading-tight);
+  color: var(--color-ink-muted);
+}
+.legend-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--print-space-6);
+  margin-top: var(--print-space-4);
+  font-size: var(--print-text-xs);
+  color: var(--color-ink-muted);
+}
+
+/* ---------- Frame index ---------- */
+.index-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding-bottom: var(--print-space-3);
+  border-bottom: var(--border-width) solid var(--color-ink);
+}
+.index-title {
+  font-size: var(--print-text-md);
+  font-weight: var(--weight-heavy);
+}
+
+/* ---------- Printing ---------- */
+/* Page size: A4 here; print-pages.js adds the Letter rule when Letter is chosen */
+@page { size: A4; margin: 0; }
+
+@media print {
+  body { background: none; }
+  .print-bar { display: none; }
+  .sheets { display: block; padding: 0; }
+  .sheet { break-after: page; }
+  .sheet:last-child { break-after: auto; }
+}

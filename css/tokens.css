@@ -1,0 +1,139 @@
+/* Design tokens. Every value used in styles.css comes from here.
+   Spacing follows the 8pt scale in design-grid-rules.md.
+   Colours and fonts come from the approved Negative Archive designs
+   (design/handover-tokens.css), with sizes snapped to the grid. */
+
+/* Fonts: Archivo and IBM Plex Mono, served from fonts/ (SIL Open Font License, see fonts/OFL-*.txt).
+   Local files, so the first launch works offline and nothing is requested from Google. */
+@font-face { font-family: 'Archivo'; font-style: normal; font-weight: 400; font-display: swap; src: url('../fonts/archivo-latin-400-normal.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: 'Archivo'; font-style: normal; font-weight: 400; font-display: swap; src: url('../fonts/archivo-latin-ext-400-normal.woff2') format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: 'Archivo'; font-style: normal; font-weight: 500; font-display: swap; src: url('../fonts/archivo-latin-500-normal.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: 'Archivo'; font-style: normal; font-weight: 500; font-display: swap; src: url('../fonts/archivo-latin-ext-500-normal.woff2') format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: 'Archivo'; font-style: normal; font-weight: 600; font-display: swap; src: url('../fonts/archivo-latin-600-normal.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: 'Archivo'; font-style: normal; font-weight: 600; font-display: swap; src: url('../fonts/archivo-latin-ext-600-normal.woff2') format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: 'Archivo'; font-style: normal; font-weight: 700; font-display: swap; src: url('../fonts/archivo-latin-700-normal.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: 'Archivo'; font-style: normal; font-weight: 700; font-display: swap; src: url('../fonts/archivo-latin-ext-700-normal.woff2') format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: 'IBM Plex Mono'; font-style: normal; font-weight: 400; font-display: swap; src: url('../fonts/ibm-plex-mono-latin-400-normal.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: 'IBM Plex Mono'; font-style: normal; font-weight: 400; font-display: swap; src: url('../fonts/ibm-plex-mono-latin-ext-400-normal.woff2') format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: 'IBM Plex Mono'; font-style: normal; font-weight: 500; font-display: swap; src: url('../fonts/ibm-plex-mono-latin-500-normal.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: 'IBM Plex Mono'; font-style: normal; font-weight: 500; font-display: swap; src: url('../fonts/ibm-plex-mono-latin-ext-500-normal.woff2') format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+
+:root {
+  color-scheme: dark;
+
+  /* Frame */
+  --frame-width: 390px;
+  --frame-height: 844px;
+
+  /* Grid */
+  --grid-columns: 4;
+  --grid-margin: 16px;
+  --grid-gutter: 16px;
+
+  /* Spacing (8pt scale) */
+  --space-0-5: 4px;
+  --space-1: 8px;
+  --space-2: 16px;
+  --space-3: 24px;
+  --space-4: 32px;
+  --space-6: 48px;
+  --space-8: 64px;
+
+  /* Zones */
+  --zone-status: 47px;
+  --zone-header: 56px;
+  --zone-tabbar: 56px;
+  --zone-safe-bottom: 34px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+
+  /* Component sizes */
+  --size-tap: 48px;
+  --size-button: 48px;
+  --size-button-sm: 32px;
+  --size-input: 48px;
+  --size-row: 56px;
+  --size-row-2: 72px;
+  --size-icon: 24px;
+  --size-icon-sm: 16px;
+  --size-avatar: 40px;
+  --size-avatar-sm: 32px;
+  --size-avatar-lg: 64px;
+
+  /* Borders */
+  --border-width: 1px;       /* hairlines, outlines */
+  --border-width-thick: 2px; /* selected frame, focus ring */
+
+  /* Radius */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-full: 999px;
+
+  /* Typography: size / line height */
+  --font-family: 'Archivo', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace; /* IDs, roll numbers, file names, apertures, edge print */
+  --text-xs: 12px;   --leading-xs: 16px;
+  --text-sm: 14px;   --leading-sm: 20px;
+  --text-base: 16px; --leading-base: 24px;
+  --text-lg: 20px;   --leading-lg: 28px;
+  --text-xl: 28px;   --leading-xl: 36px;
+  --text-display: 56px; --leading-display: 64px; /* Shoot: shot counter only */
+  --weight-regular: 400;
+  --weight-bold: 600;
+  --weight-heavy: 700;            /* screen titles, primary buttons */
+  --tracking-label: 0.08em;       /* uppercase section labels */
+  --tracking-title: -0.02em;      /* screen titles */
+
+  /* Colors: darkroom theme (the app is always dark) */
+  --color-bg: #0E0E0D;
+  --color-surface: #191917;       /* cards, inputs */
+  --color-surface-2: #2C2B28;     /* selected segment */
+  --color-text: #EEECE7;
+  --color-text-muted: #A19D94;    /* 4.5:1+ on bg and surface */
+  --color-border: #2C2B28;        /* hairlines */
+  --color-border-strong: #3A3934; /* outlined buttons and chips */
+  --color-primary: #FF5A4E;       /* safelight red: primary actions, "to edit", active */
+  --color-on-primary: #0E0E0D;
+  --color-danger: #FF5A4E;
+  --color-edge-print: #E8A33D;    /* film edge numbers, review notes */
+  --color-film-base: #050505;     /* film strips */
+  --color-placeholder: #2A2925;   /* image placeholders */
+  --color-frame: #2E2D29;         /* thumbnail placeholder */
+
+  /* Colors: PDF / print theme */
+  --color-paper: #FFFFFF;
+  --color-ink: #141414;
+  --color-ink-muted: #4A4A4A;
+  --color-rule: #BDBDBD;
+  --color-pdf-frame: #D9D8D3;
+
+  /* Print (PDF export pages only; the phone grid doesn't apply).
+     Taken from the PDF designs' pixel sizes at 96 dpi. */
+  --print-a4-width: 210mm;
+  --print-a4-height: 297mm;
+  --print-letter-width: 215.9mm;
+  --print-letter-height: 279.4mm;
+  --print-margin-top: 15mm;
+  --print-margin-side: 17mm;
+  --print-margin-bottom: 13mm;
+  --print-text-xs: 9pt;    /* labels, footers, captions (12px) */
+  --print-text-sm: 10pt;   /* body, tables (13px) */
+  --print-text-md: 14pt;   /* section heads (18px) */
+  --print-text-lg: 24pt;   /* totals, roll ID (32px) */
+  --print-text-xl: 40pt;   /* cover title (56px) */
+  --print-leading: 1.35;
+  --print-leading-tight: 1.1; /* big numbers and titles */
+  --print-space-1: 1mm;
+  --print-space-2: 2mm;
+  --print-space-3: 3mm;
+  --print-space-4: 4mm;
+  --print-space-6: 6mm;
+  --print-space-10: 10mm;
+  --print-strip-label: 6mm; /* contact sheet: strip number column */
+
+  /* Grid overlay */
+  --overlay-column: rgba(240, 153, 123, 0.14);
+  --overlay-line: rgba(240, 153, 123, 0.5);
+  --overlay-text: #f0997b;
+}

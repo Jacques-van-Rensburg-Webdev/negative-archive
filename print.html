@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Negative Archive · PDF</title>
+  <link rel="icon" href="assets/images/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/print.css">
+  <script type="module" src="js/print-pages.js"></script>
+</head>
+<body>
+  <!-- Screen only: hidden when printing -->
+  <div class="print-bar">
+    <a class="print-bar-button" href="index.html" data-back>← Back</a>
+    <span class="print-bar-status" role="status" data-print-status>Preparing pages…</span>
+    <button class="print-bar-button is-primary" type="button" data-print disabled>Print / Save as PDF</button>
+  </div>
+  <main class="sheets" data-sheets></main>
+</body>
+</html>

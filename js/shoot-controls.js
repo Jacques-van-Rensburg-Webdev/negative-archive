@@ -1,6 +1,5 @@
 // Markup and value reading for the Shoot tab's logging form and shot list.
 
-import { SHUTTER_CHIPS, exposureRowHtml, withValue } from './shoot-exposure.js';
 import { LIGHT, FILTERS, LIGHTING_ROLES, SHOT_TYPES, lightingText } from './shots.js';
 
 const esc = (value) => String(value ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -15,6 +14,11 @@ const chipGroup = (field, label, values, selected, { multi = false, mono = false
     </div>
   </div>`;
 
+const SHUTTER_CHIPS = ['1/1000', '1/500', '1/250', '1/125', '1/60', '1/30', '1/15', '1/8', '1/4', '1/2', '1"', 'B'];
+
+// A chip list with the current value added when it isn't one of them (e.g. f/9 on an older shot)
+const withValue = (values, value) => (value && !values.includes(value) ? [...values, value] : values);
+
 const time = (iso) => new Date(iso).toTimeString().slice(0, 5);
 
 /** No roll loaded: explanation and Load a new roll. */
@@ -26,7 +30,6 @@ export function emptyStateHtml() {
         <span class="text-sm text-muted">Load a roll to start logging shots. Everything is saved on this phone, also offline.</span>
       </div>
       <a class="button button-primary button-block" href="#/shoot/load">Load a new roll</a>
-      <a class="button button-secondary button-block" href="#/shoot/meter">Use the meter</a>
     </section>`;
 }
 
@@ -79,7 +82,6 @@ export function shootFormHtml({ roll, form, lenses, lensName, apertures, items, 
     </section>
 
     <section class="span-4 stack-3">
-      ${exposureRowHtml(form)}
       ${chipGroup('aperture', 'Aperture', withValue(apertures, form.aperture), form.aperture, { mono: true })}
       ${chipGroup('shutter', 'Shutter', withValue(SHUTTER_CHIPS, form.shutter), form.shutter, { mono: true })}
       ${chipGroup('light', 'Light', LIGHT, form.light)}

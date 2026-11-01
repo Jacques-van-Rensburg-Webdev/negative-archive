@@ -74,8 +74,6 @@ export function toFields(v, files) {
     exposure: v.exposure,
     aperture: v.aperture && !v.aperture.startsWith('f/') ? `f/${v.aperture}` : v.aperture,
     shutter: v.shutter,
-    ev: v.ev === undefined ? undefined : Math.round(Number(v.ev.replace(',', '.')) * 10) / 10,
-    meterMode: v.meterMode,
     notes: v.notes,
     action: v.action || 'None',
     actionComplete: v.action === 'Edit' && v.actionComplete,
@@ -95,6 +93,5 @@ export function validate(v) {
   if (!v.subject) return ['subject', 'Add a subject or description.'];
   if (v.dateTaken && !DATE_PATTERN.test(v.dateTaken)) return ['dateTaken', 'Write the date as 2026-08 or 2026-08-15.'];
   if (v.strip && !/^\d+$/.test(v.strip)) return ['strip', 'Strip is a number.'];
-  if (v.ev && !/^-?\d+([.,]\d+)?$/.test(v.ev)) return ['ev', 'EV is a number, e.g. 12.3.'];
   return null;
 }

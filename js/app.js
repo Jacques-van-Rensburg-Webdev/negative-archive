@@ -7,8 +7,6 @@ import { feedScreen } from './feed-screen.js';
 import { initGridOverlay } from './grid-overlay.js';
 import { addScreen, editScreen } from './negative-form.js';
 import { negativeScreen } from './negative-screen.js';
-import { meterCheck } from './meter-check.js';
-import { meterScreen } from './meter-screen.js';
 import { initPwa } from './pwa.js';
 import { queueScreen } from './queue-screen.js';
 import { rollLoadScreen } from './roll-load-screen.js';
@@ -27,7 +25,6 @@ function init() {
     shoot: shootScreen,
     'shoot/load': rollLoadScreen,
     'shoot/sync': syncScreen,
-    'shoot/meter': meterScreen,
     queue: queueScreen,
     'roll/:id': rollScreen,
     'negative/:id': negativeScreen,
@@ -36,7 +33,6 @@ function init() {
     export: exportScreen,
     data: dataScreen,
     'dev/components': devComponents,
-    'dev/meter-check': meterCheck,
   });
   initPwa();
   initGridOverlay();

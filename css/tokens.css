@@ -108,19 +108,6 @@
   --color-rule: #BDBDBD;
   --color-pdf-frame: #D9D8D3;
 
-  /* Meter: zone scale greys, Zone 0 (black) to Zone X (white). Zones 0–V take light text. */
-  --zone-0: #100F0E;
-  --zone-1: #22211F;
-  --zone-2: #383632;
-  --zone-3: #4D4A45;
-  --zone-4: #625F58;
-  --zone-5: #78746B;
-  --zone-6: #938F86;
-  --zone-7: #A9A69E;
-  --zone-8: #C2C0BA;
-  --zone-9: #DCDBD7;
-  --zone-10: #F3F2F1;
-
   /* Print (PDF export pages only; the phone grid doesn't apply).
      Taken from the PDF designs' pixel sizes at 96 dpi. */
   --print-a4-width: 210mm;

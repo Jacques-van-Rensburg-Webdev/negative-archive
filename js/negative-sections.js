@@ -80,14 +80,12 @@ function actionText(n) {
   return n.actionComplete ? 'Edit · done' : 'Edit · to do';
 }
 
-// Aperture, shutter and the meter reading; nothing when none were recorded
+// Aperture and shutter; nothing when neither was recorded
 function exposureSection(n) {
-  if (!n.aperture && !n.shutter && n.ev === undefined && !n.meterMode) return [];
+  if (!n.aperture && !n.shutter) return [];
   return [section('Exposure settings', [
     ['Aperture', n.aperture, true],
     ['Shutter', n.shutter, true],
-    ['EV', n.ev === undefined ? undefined : n.ev.toFixed(1), true],
-    ['Metered', n.meterMode],
   ])];
 }
 

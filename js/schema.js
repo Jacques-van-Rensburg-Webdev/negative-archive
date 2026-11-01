@@ -44,8 +44,6 @@
  * @property {'Under' | 'Good' | 'Over'} [exposure]
  * @property {string} [aperture]         'f/8' (from Shoot, or typed)
  * @property {string} [shutter]          '1/125'
- * @property {number} [ev]               metered EV at the film speed used, one decimal
- * @property {'Average' | 'Spot' | 'Estimate' | 'Typed'} [meterMode]
  * @property {string} [notes]
  * @property {'None' | 'Edit'} action
  * @property {boolean} actionComplete
@@ -81,7 +79,6 @@
  * @property {string} lensId
  * @property {string} [aperture]
  * @property {string} [shutter]          '1/125', 'B'
- * @property {{ ev: number, iso: number, mode: 'Average' | 'Spot' | 'Estimate' | 'Typed', source: 'photo' | 'light' | 'typed' }} [meter]  from the Meter screen
  * @property {string} [light]
  * @property {string} [filter]
  * @property {string} [category]
@@ -102,7 +99,6 @@ export const CATEGORIES = ['Street', 'Architecture', 'Portrait', 'Landscape'];
 export const TRI = ['No', 'Maybe', 'Yes'];
 export const FOCUS = ['Clear', 'Soft', 'Out of focus'];
 export const EXPOSURE = ['Under', 'Good', 'Over'];
-export const METER_MODES = ['Average', 'Spot', 'Estimate', 'Typed'];
 export const ACTIONS = ['None', 'Edit'];
 export const ROLL_STATUS = ['shooting', 'at_lab', 'developed', 'archived'];
 export const LIGHT = ['Bright sun', 'Overcast', 'Shade', 'Golden hour', 'Indoor', 'Night'];

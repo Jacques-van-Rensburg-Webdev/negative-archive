@@ -3,6 +3,7 @@
 // larger than a browser's longest string. Older .json backups (images as base64) still restore.
 
 import { STORES } from './db.js';
+import { THUMB_FIELDS, imageIds } from './image-kinds.js';
 
 const APP = 'negative-archive';
 const MAGIC = 'NEGATIVE-ARCHIVE-BACKUP';
@@ -16,13 +17,29 @@ function base64ToBlob(data, type) {
   return new Blob([bytes], { type });
 }
 
+const readStores = (db) => db.transaction(STORES, 'readonly', async (t) => {
+  const all = {};
+  for (const name of STORES) all[name] = await t.getAll(name);
+  return all;
+});
+
+// The images a previews-only backup keeps: those in use as previews.
+const previewImages = (stores) => {
+  const previews = imageIds([...stores.negatives, ...stores.shots], THUMB_FIELDS);
+  return stores.blobs.filter((b) => previews.has(b.id));
+};
+const totalSize = (blobs) => blobs.reduce((sum, b) => sum + (b.blob?.size || 0), 0);
+
+/** Bytes of images in each kind of backup: { everything, previews }. */
+export async function backupSizes(db) {
+  const stores = await readStores(db);
+  return { everything: totalSize(stores.blobs), previews: totalSize(previewImages(stores)) };
+}
+
 /** Builds the backup file from every store. Resolves with { file, exportedAt, stores }. */
-export async function createBackupFile(db) {
-  const stores = await db.transaction(STORES, 'readonly', async (t) => {
-    const all = {};
-    for (const name of STORES) all[name] = await t.getAll(name);
-    return all;
-  });
+export async function createBackupFile(db, { previewsOnly = false } = {}) {
+  const stores = await readStores(db);
+  if (previewsOnly) stores.blobs = previewImages(stores);
   let offset = 0;
   const images = [];
   const blobs = stores.blobs.map(({ blob, ...rest }) => {
@@ -33,7 +50,7 @@ export async function createBackupFile(db) {
   });
   const exportedAt = new Date().toISOString();
   const encoder = new TextEncoder();
-  const manifest = encoder.encode(JSON.stringify({ app: APP, format: FORMAT, exportedAt, stores: { ...stores, blobs } }));
+  const manifest = encoder.encode(JSON.stringify({ app: APP, format: FORMAT, exportedAt, previewsOnly, stores: { ...stores, blobs } }));
   const header = encoder.encode(`${MAGIC}\n${manifest.length}\n`);
   const file = new Blob([header, manifest, ...images], { type: 'application/octet-stream' });
   return { file, exportedAt, stores };
@@ -90,12 +107,12 @@ export async function restoreBackup(db, backup) {
 }
 
 /** Saves the backup as a file download, and records when. Resolves with its counts and size. */
-export async function downloadBackup(db) {
-  const { file, exportedAt, stores } = await createBackupFile(db);
+export async function downloadBackup(db, { previewsOnly = false } = {}) {
+  const { file, exportedAt, stores } = await createBackupFile(db, { previewsOnly });
   const url = URL.createObjectURL(file);
   const link = document.createElement('a');
   link.href = url;
-  link.download = `negative-archive-backup-${exportedAt.slice(0, 10)}.nabackup`;
+  link.download = `negative-archive-backup-${exportedAt.slice(0, 10)}${previewsOnly ? '-previews' : ''}.nabackup`;
   document.body.append(link);
   link.click();
   link.remove();

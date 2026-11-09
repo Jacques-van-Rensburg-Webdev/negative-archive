@@ -2,7 +2,7 @@
 // A pushed screen (no tab bar), reached from the gear button in the Archive header.
 
 import {
-  backupAgeText, backupOverdue, backupStatus, downloadBackup, readBackupFile, restoreBackup, validateBackup,
+  backupAgeText, backupOverdue, backupSizes, backupStatus, downloadBackup, readBackupFile, restoreBackup, validateBackup,
 } from './backup.js';
 import { initMerge } from './data-merge.js';
 import { getDb, onChange } from './db.js';
@@ -35,6 +35,13 @@ const TEMPLATE = `
   <section class="span-4 stack-1 mb-6">
     <h2 class="section-label">Backup</h2>
     <p class="text-sm text-muted">Everything is stored on this phone only. Export a backup now and then, and keep it somewhere safe.</p>
+    <div class="stack-1">
+      <span class="form-label" id="backup-include-label">Include</span>
+      <div class="segmented" role="radiogroup" aria-labelledby="backup-include-label" data-backup-include>
+        <button class="segment" type="button" role="radio" aria-checked="true" tabindex="0" data-value="everything">Everything</button>
+        <button class="segment" type="button" role="radio" aria-checked="false" tabindex="-1" data-value="previews">Previews only</button>
+      </div>
+    </div>
     <button class="button button-secondary button-block" type="button" data-export>Export backup</button>
     <button class="button button-secondary button-block" type="button" data-restore>Restore from backup</button>
     <button class="button button-secondary button-block" type="button" data-merge>Merge from backup</button>
@@ -51,13 +58,19 @@ const formatSize = (bytes) => (bytes >= 1024 * MB ? `${(bytes / (1024 * MB)).toF
 const formatDate = (iso) => new Date(iso).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
 
 async function refreshStats(root, db) {
-  const [negatives, rolls, lastImport, backup, storage] = await Promise.all([
+  const [negatives, rolls, lastImport, backup, storage, sizes] = await Promise.all([
     db.count('negatives'),
     db.count('rolls'),
     db.get('meta', 'last-import'),
     backupStatus(db),
     storageState(),
+    backupSizes(db),
   ]);
+  const include = (choice, label, bytes) => {
+    root.querySelector(`[data-backup-include] [data-value="${choice}"]`).textContent = bytes ? `${label} · ${formatSize(bytes)}` : label;
+  };
+  include('everything', 'Everything', sizes.everything);
+  include('previews', 'Previews only', sizes.previews);
   const set = (key, text) => {
     const node = root.querySelector(`[data-stat="${key}"]`);
     node.textContent = text;
@@ -116,8 +129,9 @@ function renderPage() {
 
   root.querySelector('[data-export]').addEventListener('click', async () => {
     try {
-      const { negatives, rolls, size } = await downloadBackup(await getDb());
-      say(`Backup saved: ${negatives} negatives, ${rolls} rolls, ${formatSize(size)}.`, 'backup');
+      const previewsOnly = root.querySelector('[data-backup-include] [aria-checked="true"]').dataset.value === 'previews';
+      const { negatives, rolls, size } = await downloadBackup(await getDb(), { previewsOnly });
+      say(`Backup saved: ${negatives} negatives, ${rolls} rolls, ${previewsOnly ? 'previews only, ' : ''}${formatSize(size)}.`, 'backup');
     } catch (error) {
       say(`Backup failed: ${error.message}`, 'backup');
     }
@@ -135,7 +149,7 @@ function renderPage() {
       const errors = validateBackup(backup);
       if (errors.length) { say(errors.join(' '), 'backup'); return; }
       const when = formatDate(backup.exportedAt);
-      const ok = window.confirm(`Replace everything in the app with the backup from ${when} (${backup.stores.negatives.length} negatives)? This can't be undone. Export a backup first if you want to keep what's here.`);
+      const ok = window.confirm(`Replace everything in the app with the backup from ${when} (${backup.stores.negatives.length} negatives)? This can't be undone. Export a backup first if you want to keep what's here.${backup.previewsOnly ? '\n\nThis backup has previews only: full-size scans and edits on this device will be deleted. To keep them, use Merge from backup instead.' : ''}`);
       if (!ok) return;
       const counts = await restoreBackup(await getDb(), backup);
       say(`Restored ${counts.negatives} negatives and ${counts.rolls} rolls from ${when}.`, 'backup');

@@ -5,14 +5,13 @@ import { backupBlobs } from './backup.js';
 import { STORES } from './db.js';
 import { DELETIONS_KEY, readDeletions } from './deletions.js';
 import { idYear, nextNegativeId, parseId } from './ids.js';
+import { FULL_FIELDS, THUMB_FIELDS, fullSizeIds, imageIds } from './image-kinds.js';
 import { isSameNegative, mergeRoll, pickNegative, pickShot, withCurrentNames } from './merge-records.js';
 
 const GEAR = [['cameras', 'id'], ['lenses', 'id'], ['filmStocks', 'name'], ['lightingItems', 'id']];
 const isCounter = (entry) => entry.key.startsWith('id-counter-');
 const origin = (id, createdAt) => `${id}|${createdAt}`;
 const metaEntry = (meta, key) => meta.find((m) => m.key === key);
-const THUMB_FIELDS = ['thumbBlobId', 'editThumbBlobId', 'refThumbBlobId'];
-const FULL_FIELDS = ['scanBlobId', 'editBlobId', 'refPhotoBlobId'];
 
 function combineDeletions(a, b) {
   const rolls = { ...a.rolls };
@@ -107,13 +106,11 @@ export function planMerge(local, incoming, imageSizes) {
 
   // Images: copy what the final records use and this device lacks; drop what only deleted records used.
   const finalRecords = [...negatives.values(), ...clashes, ...shots.values()];
-  const collect = (records, fields) => new Set(records.flatMap((r) => fields.map((f) => r[f])).filter(Boolean));
-  const used = collect(finalRecords, [...THUMB_FIELDS, ...FULL_FIELDS]);
-  const thumbs = collect(finalRecords, THUMB_FIELDS);
-  const full = new Set([...collect(finalRecords, FULL_FIELDS)].filter((id) => !thumbs.has(id)));
+  const used = imageIds(finalRecords, [...THUMB_FIELDS, ...FULL_FIELDS]);
+  const full = fullSizeIds(finalRecords);
   const have = new Set(local.blobKeys);
   const images = imageSizes.filter((b) => used.has(b.id) && !have.has(b.id)).map((b) => ({ ...b, full: full.has(b.id) }));
-  const imageRemoves = [...collect([...removedNegatives, ...removedShots], [...THUMB_FIELDS, ...FULL_FIELDS])].filter((id) => !used.has(id));
+  const imageRemoves = [...imageIds([...removedNegatives, ...removedShots], [...THUMB_FIELDS, ...FULL_FIELDS])].filter((id) => !used.has(id));
   summary.fullImages = images.filter((b) => b.full).length;
   summary.fullSize = images.filter((b) => b.full).reduce((sum, b) => sum + b.size, 0);
   summary.images = images.length;

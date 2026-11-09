@@ -104,7 +104,7 @@ async function fill(root, db) {
     statTile(totals.toEdit, 'to edit', totals.toEdit > 0),
   ];
 
-  const list = el('section', 'span-4 stack-1 mb-6');
+  const list = el('section', 'span-4 stack-1 mb-6 roll-list');
   list.append(el('h2', 'section-label', 'Rolls'));
   const empty = ordered.filter((roll) => !byRoll.has(roll.id));
   const logged = ordered.filter((roll) => byRoll.has(roll.id));
@@ -148,4 +148,4 @@ function actions() {
   return [pdf, link];
 }
 
-export const archiveScreen = { title: 'Archive', actions, render };
+export const archiveScreen = { title: 'Archive', wide: true, actions, render };

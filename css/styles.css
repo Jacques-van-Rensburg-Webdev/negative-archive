@@ -29,7 +29,7 @@ button { cursor: pointer; }
 }
 
 /* ---------- App shell (zones) ---------- */
-/* On desktop the app is centred at phone width so it matches the frame. */
+/* Phone first. The desktop layout (1024 wide or more) is at the end of this file. */
 .app {
   position: relative;
   max-width: var(--frame-width);
@@ -1003,6 +1003,10 @@ a.chip { color: var(--color-text); text-decoration: none; }
 /* Pulls a block up to the top of Content (no space-3 gap under the header) */
 .flush-top { margin-top: calc(var(--space-3) * -1); }
 
+/* Negative detail: on a phone everything is one column, with the heading space-3 under the switch */
+.negative-info { display: contents; }
+.negative-head { margin-top: calc(var(--space-3) - var(--space-4)); }
+
 /* Negative detail image: 3:2, full-bleed, with the film-edge band along its foot */
 .negative-image {
   position: relative;
@@ -1151,4 +1155,106 @@ a.chip { color: var(--color-text); text-decoration: none; }
   top: auto;
   bottom: 100%;
   border-radius: 0 var(--radius-sm) 0 0;
+}
+
+/* ---------- Desktop: window 1024 wide or more (--breakpoint-desktop) ---------- */
+@media (min-width: 1024px) {
+  /* Shell: Sidebar (the tab bar) on the left, Header and Content beside it */
+  .app {
+    max-width: none;
+    display: grid;
+    grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+    grid-template-rows: auto 1fr auto;
+    grid-template-areas:
+      'sidebar header'
+      'sidebar content'
+      'sidebar banner';
+  }
+  .app-header { grid-area: header; }
+  .app-content { grid-area: content; }
+
+  .app-tabbar,
+  .app.is-pushed .app-tabbar {
+    grid-area: sidebar;
+    display: block;
+    top: 0;
+    bottom: auto;
+    align-self: start;
+    height: 100dvh;
+    padding-block: var(--space-1);
+    box-shadow: inset calc(var(--border-width) * -1) 0 0 var(--color-border);
+  }
+  .app-tabbar-inner {
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-0-5);
+    padding-inline: var(--space-1);
+  }
+  .tab {
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: var(--space-2);
+    padding-inline: var(--space-1);
+    border-radius: var(--radius-sm);
+    font-size: var(--text-base);
+    line-height: var(--leading-base);
+  }
+  .tab:hover,
+  .tab[aria-current="page"] { background: var(--color-surface); color: var(--color-text); }
+  .tab-shoot-tile { width: var(--size-icon); height: var(--size-icon); }
+
+  .update-banner {
+    grid-area: banner;
+    justify-self: center;
+    bottom: var(--space-2);
+    width: 100%;
+    max-width: var(--content-narrow);
+    margin: 0 0 var(--space-2);
+  }
+
+  /* Content: a centred 640 column, or the full 1280 on wide screens */
+  .app-header-inner,
+  .app-content > * {
+    max-width: var(--content-narrow);
+    margin-inline: auto;
+  }
+  .app.is-wide .app-header-inner,
+  .app.is-wide .app-content > * { max-width: var(--content-max); }
+  .app.is-wide .app-header-inner,
+  .app.is-wide .app-content > .grid { padding-inline: var(--space-4); }
+
+  /* A block in columns 1–2 */
+  .desktop-half { grid-column: 1 / span 2; }
+
+  /* Archive: roll cards two per row */
+  .roll-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--grid-gutter);
+  }
+  .roll-list > :not(.roll-card) { grid-column: 1 / -1; }
+
+  /* Negative detail: image stays in view in columns 1–2, details scroll in columns 3–4 */
+  .negative-media {
+    grid-column: 1 / span 2;
+    position: sticky;
+    top: calc(var(--zone-header) + var(--space-3));
+    align-self: start;
+  }
+  .negative-image.full-bleed { margin-inline: 0; margin-top: 0; }
+  .negative-info {
+    grid-column: 3 / span 2;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: var(--space-4);
+    align-content: start;
+  }
+  .negative-head { margin-top: 0; }
+
+  /* Grid overlay follows the Content columns */
+  .grid-overlay { padding-left: var(--sidebar-width); }
+  .grid-overlay-frame { max-width: var(--content-narrow); }
+  .app.is-wide ~ .grid-overlay .grid-overlay-frame { max-width: var(--content-max); }
+  .app.is-wide ~ .grid-overlay .grid-overlay-columns { padding-inline: var(--space-4); }
 }

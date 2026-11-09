@@ -25,6 +25,13 @@
   --frame-width: 390px;
   --frame-height: 844px;
 
+  /* Desktop (window 1024 wide or more). CSS can't read a variable inside @media, so
+     --breakpoint-desktop records the value used by the media query in styles.css. */
+  --breakpoint-desktop: 1024px;
+  --sidebar-width: 240px;
+  --content-max: 1280px;
+  --content-narrow: 640px;
+
   /* Grid */
   --grid-columns: 4;
   --grid-margin: 16px;

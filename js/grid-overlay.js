@@ -48,7 +48,8 @@ function buildOverlay() {
     }
     if (tabbar) {
       const t = tabbar.getBoundingClientRect();
-      addZone(`Tab bar · ${Math.round(t.height)}`, t.top, t.height, true);
+      const isSidebar = t.height > t.width; // desktop: the tab bar is the sidebar, not a zone
+      if (!isSidebar) addZone(`Tab bar · ${Math.round(t.height)}`, t.top, t.height, true);
     }
   };
 

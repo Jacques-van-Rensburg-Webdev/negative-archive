@@ -61,6 +61,7 @@ export function initRouter(screens) {
     const ctx = { params, query, setTitle, setActions: (nodes) => actions.replaceChildren(...nodes) };
     const pushed = Boolean(screen.pushed);
     app.classList.toggle('is-pushed', pushed);
+    app.classList.toggle('is-wide', Boolean(screen.wide)); // desktop: full Content width, not the 640 column
     back.hidden = !pushed;
     title.classList.toggle('text-mono', Boolean(screen.titleMono));
 

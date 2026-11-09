@@ -123,13 +123,14 @@ async function fill(root, db, id, state, ctx) {
     root.querySelector('.negative-image').replaceWith(await imageArea(db, n, state.version));
   });
 
-  // Image at 0, switch space-2 below, heading space-3 below that, pills space-2 below
+  // Image at 0, switch space-2 below, heading space-3 below that, pills space-2 below.
+  // Desktop: image and switch in columns 1–2, everything else in columns 3–4.
+  const media = el('section', 'span-4 negative-media');
+  media.append(image, switcher);
   const pills = statusPills(n);
   pills.classList.add('mt-2');
-  const titleBlock = heading(n);
-  titleBlock.classList.add('mt-3');
-  const top = el('section', 'span-4');
-  top.append(image, switcher, titleBlock, pills);
+  const head = el('section', 'span-4 negative-head');
+  head.append(heading(n), pills);
   const edit = el('a', 'span-4 button button-secondary button-block', 'Edit details');
   edit.href = `#/negative/${encodeURIComponent(n.id)}/edit`;
 
@@ -137,7 +138,9 @@ async function fill(root, db, id, state, ctx) {
   const urls = await previewUrls(db, rollNegatives.filter((x) => x.strip === n.strip));
   const shot = n.shotId ? await db.get('shots', n.shotId) : undefined;
   const shotBlock = shot ? [shotSection(shot, lenses.get(shot.lensId), lightingText(shot.lighting))] : [];
-  root.replaceChildren(top, whereFiled(db, n, roll, rollNegatives, urls), ...shotBlock, ...detailSections(n, roll, names), edit, postBlock(db, n));
+  const info = el('div', 'negative-info');
+  info.append(head, whereFiled(db, n, roll, rollNegatives, urls), ...shotBlock, ...detailSections(n, roll, names), edit, postBlock(db, n));
+  root.replaceChildren(media, info);
 }
 
 function render(ctx) {
@@ -152,6 +155,7 @@ function render(ctx) {
 }
 
 export const negativeScreen = {
+  wide: true,
   title: ({ params }) => params.id,
   titleMono: true,
   pushed: true,

@@ -73,7 +73,7 @@ function legend() {
 function nextStepLink(roll) {
   const id = encodeURIComponent(roll.id);
   if (roll.status === 'at_lab') return [];
-  const link = el('a', 'span-4 button button-secondary button-block', roll.status === 'shooting' ? 'Go to Shoot' : 'Log negatives');
+  const link = el('a', 'span-4 desktop-half button button-secondary button-block', roll.status === 'shooting' ? 'Go to Shoot' : 'Log negatives');
   link.href = roll.status === 'shooting' ? `#/shoot?roll=${id}` : `#/add?roll=${id}`;
   return [link];
 }
@@ -115,7 +115,7 @@ async function fill(root, db, rollId, state) {
   );
   if (ids.length) details.append(el('p', 'text-xs text-muted text-mono', `${ids[0]} → ${ids.at(-1)}`));
 
-  const storage = el('div', 'span-4 field-group');
+  const storage = el('div', 'span-4 desktop-half field-group');
   storage.append(inlineSetRow({
     label: 'Lab no.',
     value: roll.labNumber,
@@ -135,8 +135,9 @@ async function fill(root, db, rollId, state) {
     statTile(counts.toEdit, 'to edit', counts.toEdit > 0),
     statTile(counts.social, 'social'),
   ];
+  tiles[0].classList.add('start-1'); // desktop: a new row, under the half-width block
 
-  const switcher = el('div', 'span-4');
+  const switcher = el('div', 'span-4 desktop-half');
   switcher.append(segmented(state.view));
   const body = el('div', 'span-4');
   const showView = () => {
@@ -153,7 +154,7 @@ async function fill(root, db, rollId, state) {
 
   const shots = await db.byIndex('shots', 'rollId', rollId);
   const pending = unsyncedShots(shots);
-  const sync = el('a', 'span-4 button button-secondary button-block', `Sync ${pending.length} shot${pending.length === 1 ? '' : 's'} from the photo log`);
+  const sync = el('a', 'span-4 desktop-half button button-secondary button-block', `Sync ${pending.length} shot${pending.length === 1 ? '' : 's'} from the photo log`);
   sync.href = `#/shoot/sync?roll=${encodeURIComponent(rollId)}`;
 
   const foot = el('div', 'span-4');
@@ -183,6 +184,7 @@ function actions({ params }) {
 }
 
 export const rollScreen = {
+  wide: true,
   title: ({ params }) => params.id,
   actions,
   titleMono: true,

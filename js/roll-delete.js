@@ -49,7 +49,7 @@ function actionButton(className, text, onClick) {
 /** The Remove roll and delete data button, with its two confirmation steps. */
 export function deleteRollBlock(db, roll, negativeCount, shotCount) {
   const block = document.createElement('div');
-  block.className = 'span-4 stack-1 mb-6';
+  block.className = 'span-4 desktop-half stack-1 mb-6';
 
   const message = (text, className) => {
     const line = document.createElement('p');

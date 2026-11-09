@@ -1,5 +1,6 @@
 // Shoot data: loading and unloading rolls, the shot log, aperture stops and the lighting bag.
 
+import { clearRollNote, noteDeleted } from './deletions.js';
 import { removeImages } from './files.js';
 import { newRoll } from './schema.js';
 
@@ -35,12 +36,13 @@ export const rollsInCamera = (rolls) => rolls.filter((r) => r.status === 'shooti
 
 /** Loads a new roll into a camera. Rejects a used roll ID, or a camera that already holds a roll. */
 export function loadRoll(db, fields) {
-  return db.transaction(['rolls'], 'readwrite', async (t) => {
+  return db.transaction(['rolls', 'meta'], 'readwrite', async (t) => {
     if (await t.get('rolls', fields.id)) throw new Error(`${fields.id} is already in the archive. Choose another roll number.`);
     const busy = (await t.getAll('rolls')).find((r) => r.status === 'shooting' && r.cameraId === fields.cameraId);
     if (busy) throw new Error(`${busy.id} is still in this camera. Unload it on the Shoot tab first.`);
     const roll = newRoll({ ...fields, status: 'shooting', loadedAt: new Date().toISOString() });
     await t.put('rolls', roll);
+    await clearRollNote(t, roll.id);
     return roll;
   });
 }
@@ -70,7 +72,10 @@ export const updateShot = (db, shot) => db.put('shots', { ...shot, updatedAt: ne
 
 /** Deletes a shot and its reference photo. A negative already synced from it stays in the archive. */
 export async function deleteShot(db, shot) {
-  await db.remove('shots', shot.id);
+  await db.transaction(['shots', 'meta'], 'readwrite', async (t) => {
+    await t.remove('shots', shot.id);
+    await noteDeleted(t, { shots: [shot.id] });
+  });
   await removeImages(db, [shot.refPhotoBlobId, shot.refThumbBlobId]);
 }
 

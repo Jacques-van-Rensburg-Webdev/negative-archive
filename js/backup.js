@@ -66,13 +66,16 @@ export function validateBackup(backup) {
   return missing.length ? [`Backup is missing: ${missing.join(', ')}.`] : [];
 }
 
+/** A backup's images as store entries ({ id, blob, … }), whichever format it is. */
+export const backupBlobs = (backup) => (backup.format === JSON_FORMAT
+  ? backup.stores.blobs.map(({ data, type, ...rest }) => ({ ...rest, blob: base64ToBlob(data, type) }))
+  : backup.stores.blobs);
+
 /** Replaces the whole database with the backup. Resolves with item counts per store. */
 export async function restoreBackup(db, backup) {
   const errors = validateBackup(backup);
   if (errors.length) throw new Error(errors.join(' '));
-  const blobs = backup.format === JSON_FORMAT
-    ? backup.stores.blobs.map(({ data, type, ...rest }) => ({ ...rest, blob: base64ToBlob(data, type) }))
-    : backup.stores.blobs;
+  const blobs = backupBlobs(backup);
   return db.transaction(STORES, 'readwrite', async (t) => {
     const counts = {};
     for (const name of STORES) {

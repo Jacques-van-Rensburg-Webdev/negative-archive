@@ -4,6 +4,7 @@
 import {
   backupAgeText, backupOverdue, backupStatus, downloadBackup, readBackupFile, restoreBackup, validateBackup,
 } from './backup.js';
+import { initMerge } from './data-merge.js';
 import { getDb, onChange } from './db.js';
 import { applyImport, planImport } from './import.js';
 import { renderImportPreview } from './import-preview.js';
@@ -36,9 +37,12 @@ const TEMPLATE = `
     <p class="text-sm text-muted">Everything is stored on this phone only. Export a backup now and then, and keep it somewhere safe.</p>
     <button class="button button-secondary button-block" type="button" data-export>Export backup</button>
     <button class="button button-secondary button-block" type="button" data-restore>Restore from backup</button>
+    <button class="button button-secondary button-block" type="button" data-merge>Merge from backup</button>
     <input type="file" hidden data-restore-input>
+    <input type="file" hidden data-merge-input>
     <p class="text-xs text-muted" data-install-hint hidden>Install to the Home Screen (Share → Add to Home Screen) so iPhone keeps your data.</p>
     <p class="text-sm" role="status" data-status="backup"></p>
+    <div data-merge-preview></div>
   </section>
 `;
 
@@ -118,6 +122,8 @@ function renderPage() {
       say(`Backup failed: ${error.message}`, 'backup');
     }
   });
+
+  initMerge(root, getDb, (text) => say(text, 'backup'), formatSize);
 
   root.querySelector('[data-restore]').addEventListener('click', () => restoreInput.click());
   restoreInput.addEventListener('change', async () => {

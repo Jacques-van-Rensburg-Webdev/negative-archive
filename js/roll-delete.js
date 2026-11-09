@@ -1,6 +1,7 @@
 // Deleting a roll: its negatives, Shoot log and stored images go with it, all in one
 // transaction. Only the app's own copies are removed; files on the computer aren't touched.
 
+import { noteDeleted } from './deletions.js';
 import { reserveId } from './ids.js';
 
 const negativeImages = (n) => [n.scanBlobId, n.thumbBlobId, n.editBlobId, n.editThumbBlobId, n.refThumbBlobId];
@@ -19,6 +20,7 @@ export function deleteRoll(db, rollId) {
     }
     for (const s of shots) await t.remove('shots', s.id);
     await t.remove('rolls', rollId);
+    await noteDeleted(t, { roll: rollId, negatives, shots: shots.map((s) => s.id) }); // so a merge doesn't bring it back
 
     // A negative moved to another roll can still show a reference photo from this roll's log.
     const stillUsed = new Set((await t.getAll('negatives')).flatMap(negativeImages));

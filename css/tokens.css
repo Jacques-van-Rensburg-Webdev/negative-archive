@@ -25,6 +25,28 @@
   --frame-width: 390px;
   --frame-height: 844px;
 
+  /* Darkroom timer: luminous lab-timer look, and Safelight. Only used on that screen. */
+  --timer-bg: #121311;
+  --timer-panel: #1b1d1a;
+  --timer-line: #30332d;
+  --timer-fg: #e6e8df;
+  --timer-muted: #8f9488;
+  --timer-lume: #cfe9b4;
+  --timer-amber: #f2a541;
+  --timer-danger: #ef6a4f;
+  --timer-ring: #262923;
+  --timer-safe-bg: #0d0302;
+  --timer-safe-panel: #160504;
+  --timer-safe-line: #3a0d08;
+  --timer-safe-fg: #e0442c;
+  --timer-safe-muted: #8a2a1c;
+  --timer-safe-lume: #ff4a2e;
+  --timer-safe-amber: #ff7a3a;
+  --timer-safe-danger: #ff3a1e;
+  --timer-safe-ring: #2a0806;
+  --timer-pulse: 1.2s;
+  --timer-pulse-dim: 0.45;
+
   /* Desktop (window 1024 wide or more). CSS can't read a variable inside @media, so
      --breakpoint-desktop records the value used by the media query in styles.css. */
   --breakpoint-desktop: 1024px;

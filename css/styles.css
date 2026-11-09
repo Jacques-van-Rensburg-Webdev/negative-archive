@@ -1172,6 +1172,87 @@ a.chip { color: var(--color-text); text-decoration: none; }
   border-radius: 0 var(--radius-sm) 0 0;
 }
 
+/* ---------- Darkroom timer ---------- */
+/* The screen maps the app's colours to the timer's, so shared controls follow them. */
+.app.is-timer {
+  color: var(--color-text);
+  --color-bg: var(--timer-bg);
+  --color-surface: var(--timer-panel);
+  --color-surface-2: var(--timer-line);
+  --color-border: var(--timer-line);
+  --color-border-strong: var(--timer-line);
+  --color-text: var(--timer-fg);
+  --color-text-muted: var(--timer-muted);
+  --color-primary: var(--timer-lume);
+  --color-on-primary: var(--timer-bg);
+  --color-danger: var(--timer-danger);
+  --color-edge-print: var(--timer-amber);
+}
+.app.is-timer.is-safelight {
+  --timer-bg: var(--timer-safe-bg);
+  --timer-panel: var(--timer-safe-panel);
+  --timer-line: var(--timer-safe-line);
+  --timer-fg: var(--timer-safe-fg);
+  --timer-muted: var(--timer-safe-muted);
+  --timer-lume: var(--timer-safe-lume);
+  --timer-amber: var(--timer-safe-amber);
+  --timer-danger: var(--timer-safe-danger);
+  --timer-ring: var(--timer-safe-ring);
+}
+body:has(.app.is-timer) { background: var(--timer-bg); }
+body:has(.app.is-timer.is-safelight) { background: var(--timer-safe-bg); }
+
+.timer-link { margin-inline-end: var(--space-1); }
+.timer-panel {
+  padding: var(--space-2);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+.timer-setup { align-self: start; }
+.timer-fieldset { min-width: 0; padding: 0; border: 0; }
+.timer-fieldset:disabled { opacity: var(--timer-pulse-dim); }
+.timer-slider { width: 100%; height: var(--size-tap); accent-color: var(--timer-lume); }
+.timer-warning { color: var(--timer-amber); }
+.timer-position { text-align: center; color: var(--color-text-muted); }
+
+.timer-dial { display: block; width: 100%; height: auto; }
+.timer-dial circle, .timer-dial path { fill: none; }
+.timer-track { stroke: var(--timer-ring); stroke-width: var(--space-1); }
+.timer-progress { stroke: var(--timer-lume); stroke-width: var(--space-1); }
+.timer-dial .timer-hand { fill: var(--timer-lume); }
+.timer-dial .timer-window { stroke: var(--timer-amber); stroke-width: var(--space-0-5); }
+.timer-tick { stroke: var(--timer-muted); stroke-width: var(--border-width); }
+.timer-tick.is-major { stroke: var(--timer-fg); stroke-width: var(--border-width-thick); }
+.timer-dial text { text-anchor: middle; dominant-baseline: middle; }
+.timer-tick-label { fill: var(--timer-muted); font-family: var(--font-mono); font-size: var(--text-xs); }
+.timer-step-name { fill: var(--timer-fg); font-size: var(--text-lg); font-weight: var(--weight-bold); }
+.timer-countdown { fill: var(--timer-lume); font-family: var(--font-mono); font-size: var(--space-8); font-weight: var(--weight-bold); font-variant-numeric: tabular-nums; }
+.timer-cue { fill: var(--timer-muted); font-size: var(--text-base); font-weight: var(--weight-bold); }
+.timer-cue.is-agitate { fill: var(--timer-amber); animation: timer-pulse var(--timer-pulse) ease-in-out infinite; }
+.timer-cue.is-drain { fill: var(--timer-danger); animation: timer-pulse var(--timer-pulse) ease-in-out infinite; }
+.timer-cue.is-done { fill: var(--timer-lume); }
+@keyframes timer-pulse { 50% { opacity: var(--timer-pulse-dim); } }
+@media (prefers-reduced-motion: reduce) {
+  .timer-cue.is-agitate, .timer-cue.is-drain { animation: none; }
+}
+
+.timer-sheet { list-style: none; padding: 0; border: var(--border-width) solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); }
+.timer-row { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-1) var(--space-2); }
+.timer-row + .timer-row { border-top: var(--border-width) solid var(--color-border); }
+.timer-row-number { flex-shrink: 0; width: var(--space-2); color: var(--color-text-muted); }
+.timer-row-text { flex: 1; min-width: 0; }
+.timer-time { flex-shrink: 0; width: calc(var(--space-8) + var(--space-3)); text-align: center; }
+.timer-row.is-active { box-shadow: inset var(--space-0-5) 0 0 var(--timer-lume); }
+.timer-row.is-active .timer-row-name { color: var(--timer-lume); }
+.timer-row.is-finished .timer-row-text, .timer-row.is-finished .timer-time { opacity: var(--timer-pulse-dim); }
+.timer-row.is-skipped .timer-row-name { text-decoration: line-through; color: var(--color-text-muted); }
+.timer-skip { align-self: flex-start; min-height: var(--size-tap); padding: 0; border: 0; background: transparent; color: var(--timer-amber); text-decoration: underline; }
+.timer-skip:disabled { opacity: var(--timer-pulse-dim); }
+.timer-summary { min-height: var(--size-tap); display: flex; align-items: center; cursor: pointer; }
+.timer-sources { list-style: none; padding: 0; display: flex; flex-direction: column; gap: var(--space-1); }
+.timer-sources a { color: var(--color-text); }
+
 /* ---------- Desktop: window 1024 wide or more (--breakpoint-desktop) ---------- */
 @media (min-width: 1024px) {
   /* Shell: Sidebar (the tab bar) on the left, Header and Content beside it */
@@ -1238,6 +1319,8 @@ a.chip { color: var(--color-text); text-decoration: none; }
   .app.is-wide .app-content > * { max-width: var(--content-max); }
   .app.is-wide .app-header-inner,
   .app.is-wide .app-content > .grid { padding-inline: var(--space-4); }
+
+  .timer-setup { grid-column: 3 / span 2; }
 
   /* A block in columns 1–2 */
   .desktop-half { grid-column: 1 / span 2; }

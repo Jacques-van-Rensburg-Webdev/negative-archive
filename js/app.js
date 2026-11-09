@@ -16,6 +16,7 @@ import { rollScreen } from './roll-screen.js';
 import { searchScreen } from './search-screen.js';
 import { initRouter } from './router.js';
 import { shootScreen } from './shoot-screen.js';
+import { timerScreen } from './timer-screen.js';
 import { syncScreen } from './sync-screen.js';
 
 function init() {
@@ -27,6 +28,7 @@ function init() {
     shoot: shootScreen,
     'shoot/load': rollLoadScreen,
     'shoot/sync': syncScreen,
+    timer: timerScreen,
     queue: queueScreen,
     'roll/:id': rollScreen,
     'negative/:id': negativeScreen,

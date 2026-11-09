@@ -12,6 +12,14 @@ import {
 
 const stickyKey = (rollId) => `shoot-sticky-${rollId}`;
 
+function timerLink() {
+  const timer = document.createElement('a');
+  timer.className = 'button button-sm timer-link';
+  timer.href = '#/timer';
+  timer.textContent = 'Timer';
+  return timer;
+}
+
 function render({ query, setActions }) {
   const root = document.createElement('div');
   root.className = 'grid grid-sections';
@@ -44,7 +52,7 @@ function render({ query, setActions }) {
     const rolls = rollsInCamera(await db.getAll('rolls'));
     if (!rolls.length) {
       root.innerHTML = emptyStateHtml();
-      setActions([]);
+      setActions([timerLink()]);
       return;
     }
     roll = rolls.find((r) => r.id === query.get('roll')) || rolls[0];
@@ -56,7 +64,7 @@ function render({ query, setActions }) {
     sync.className = 'button button-sm';
     sync.href = `#/shoot/sync?roll=${encodeURIComponent(roll.id)}`;
     sync.textContent = 'Sync';
-    setActions([sync]);
+    setActions([timerLink(), sync]);
 
     const lens = lenses.find((l) => l.id === form.lensId);
     const apertures = apertureStops(lens?.maxAperture);

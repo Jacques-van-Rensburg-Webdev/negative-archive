@@ -25,6 +25,7 @@ function summaryRows(s) {
   rows.push(['New rolls', s.rollsAdded]);
   if (s.rollsDiffer) rows.push(['Rolls with different details', s.rollsDiffer]);
   if (s.removed) rows.push(['Removed, deleted on the other device', s.removed]);
+  s.removedRolls.forEach((r) => rows.push([`${r.id} will be removed`, `${r.items} item${r.items === 1 ? '' : 's'}`]));
   return rows;
 }
 

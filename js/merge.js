@@ -23,7 +23,13 @@ function combineDeletions(a, b) {
 export function planMerge(local, incoming, imageSizes) {
   const deleted = combineDeletions(readDeletions(metaEntry(local.meta, DELETIONS_KEY)), readDeletions(metaEntry(incoming.meta, DELETIONS_KEY)));
   const rollIsDeleted = (r) => deleted.rolls[r.id] && !(r.loadedAt && r.loadedAt > deleted.rolls[r.id]);
-  const negativeIsDeleted = (n) => deleted.negatives[n.id] === n.rollId;
+  // A note only covers what existed when the roll was deleted. Anything created later (the roll
+  // imported again) means the roll is back in use, on both devices, so its note no longer applies.
+  [...local.negatives, ...incoming.negatives].forEach((n) => {
+    const at = deleted.rolls[n.rollId];
+    if (at && (n.createdAt || '') > at) delete deleted.rolls[n.rollId];
+  });
+  const negativeIsDeleted = (n) => deleted.negatives[n.id] === n.rollId && Boolean(deleted.rolls[n.rollId]);
   const shotIsDeleted = (s) => deleted.shots.includes(s.id);
   const summary = { added: 0, updated: 0, kept: 0, same: 0, clashes: 0, rollsAdded: 0, rollsDiffer: 0, removed: 0 };
 
@@ -96,6 +102,10 @@ export function planMerge(local, incoming, imageSizes) {
   });
   rolls.forEach((_, id) => { delete deleted.rolls[id]; });
   summary.removed = removedNegatives.length + removedShots.length + rollRemoves.length;
+  summary.removedRolls = rollRemoves.map((id) => ({
+    id,
+    items: 1 + removedNegatives.filter((n) => n.rollId === id).length + removedShots.filter((s) => s.rollId === id).length,
+  }));
 
   // Gear and ID counters
   const gearPuts = GEAR.flatMap(([store, key]) => {

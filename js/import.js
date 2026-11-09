@@ -4,6 +4,7 @@
 import { parseCsv } from './csv.js';
 import { checkFiles, checkOrder, findTemplateRolls, rollOrder } from './import-checks.js';
 import { isColourRoll, mapRecord, readHeader, rowToRecord } from './import-map.js';
+import { clearRollNote } from './deletions.js';
 import { reserveId } from './ids.js';
 import { newRoll, slug } from './schema.js';
 
@@ -158,6 +159,7 @@ export function applyImport(db, plan, source = '') {
       for (const item of items) if (!have.has(item[key])) await t.put(store, item);
     };
     await putMissing('rolls', plan.rolls);
+    for (const roll of plan.rolls) await clearRollNote(t, roll.id); // imported again, so no longer deleted
     await putMissing('cameras', plan.gear.cameras);
     await putMissing('lenses', plan.gear.lenses);
     await putMissing('filmStocks', plan.gear.filmStocks, 'name');

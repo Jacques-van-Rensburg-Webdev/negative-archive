@@ -23,7 +23,9 @@ function button(className, text, onClick) {
   return node;
 }
 
-const applySafelight = () => document.querySelector('.app').classList.toggle('is-safelight', session.prefs.safelight);
+function applySafelight() {
+  [document.querySelector('.app'), document.body].forEach((node) => node.classList.toggle('is-safelight', session.prefs.safelight));
+}
 
 function prefChips() {
   const row = el('div', 'span-4 chip-row');

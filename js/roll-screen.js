@@ -8,6 +8,7 @@ import { getDb } from './db.js';
 import { renderFilmStrip } from './film-strip.js';
 import { previewUrls } from './files.js';
 import { inlineSetRow } from './inline-set.js';
+import { lazyBackground } from './lazy-images.js';
 import { deleteRollBlock } from './roll-delete.js';
 import { replaceQuery } from './router.js';
 import { frameLayout, formatText } from './formats.js';
@@ -50,7 +51,7 @@ function listView(negatives, urls) {
     row.href = `#/negative/${encodeURIComponent(n.id)}`;
     const thumb = el('span', 'span-1 thumbnail');
     const url = urls.get(n.id);
-    if (url) thumb.style.backgroundImage = `url("${url}")`;
+    if (url) lazyBackground(thumb, url);
     const text = el('span', 'span-3 stack-0-5');
     text.append(
       el('span', 'text-xs text-muted text-mono', `${n.id} · fr ${n.frameLabel || n.frame || '–'}${n.status === 'draft' ? ' · draft' : ''}`),

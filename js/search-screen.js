@@ -4,6 +4,7 @@
 import { formatMonth, loadArchive, watch } from './archive-data.js';
 import { getDb } from './db.js';
 import { previewUrls } from './files.js';
+import { lazyBackground } from './lazy-images.js';
 import { replaceQuery } from './router.js';
 import {
   FACETS, applySearch, buildEntries, facetOptions, hasLightingData, isEmptyState, valueLabel,
@@ -39,7 +40,7 @@ function resultRow(entry, url) {
   const row = el('a', 'grid grid-inner list-row');
   row.href = `#/negative/${encodeURIComponent(n.id)}`;
   const thumb = el('span', 'span-1 thumbnail');
-  if (url) thumb.style.backgroundImage = `url("${url}")`;
+  if (url) lazyBackground(thumb, url);
   const text = el('span', 'span-3 stack-0-5');
   const meta = [entry.film, formatMonth(entry.month) || n.dateTaken, (n.location || '').split(',')[0]].filter(Boolean).join(' · ');
   text.append(

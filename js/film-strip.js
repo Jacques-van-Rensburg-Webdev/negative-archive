@@ -4,6 +4,8 @@
 // options.interactive = false: frames are plain pictures (for a strip inside a link, e.g. a roll card).
 // options.layout = { perStrip, aspect }: frames per strip and frame shape (from formats.js; 35mm by default).
 
+import { lazyBackground } from './lazy-images.js';
+
 const STATUS_TEXT = { 'to-edit': 'to edit', edited: 'edited' };
 const FLAG_TEXT = { U: 'underexposed', O: 'overexposed', S: 'soft' };
 
@@ -28,7 +30,7 @@ function renderFrame(data, { selected, href, interactive = true }) {
 
   const image = document.createElement('span');
   image.className = `film-frame-image${data.draft ? ' is-draft' : ''}`;
-  if (data.image) image.style.backgroundImage = `url("${data.image}")`;
+  if (data.image) lazyBackground(image, data.image);
   if (data.status) {
     const dot = document.createElement('span');
     dot.className = `film-frame-dot is-${data.status}`;

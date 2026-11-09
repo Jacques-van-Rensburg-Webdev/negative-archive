@@ -3,6 +3,7 @@
 
 import { loadArchive, watch } from './archive-data.js';
 import { getDb } from './db.js';
+import { lazyBackground } from './lazy-images.js';
 import { previewUrls } from './files.js';
 import { LISTS, markDone, queueCounts, queueGroups, undoDone } from './queue.js';
 import { replaceQuery } from './router.js';
@@ -39,7 +40,7 @@ function row(n, url, list, onDone) {
   const link = el('a', 'span-3 grid-3');
   link.href = `#/negative/${encodeURIComponent(n.id)}`;
   const thumb = el('span', 'span-1 thumbnail');
-  if (url) thumb.style.backgroundImage = `url("${url}")`;
+  if (url) lazyBackground(thumb, url);
   const text = el('span', 'span-2 stack-0-5');
   text.append(el('span', 'text-xs text-muted text-mono', `${n.id} · fr ${n.frameLabel || n.frame || '–'}`), el('span', 'text-sm text-bold list-row-title', n.subject || 'No subject'));
   if (n.notes) text.append(el('span', 'text-sm text-edge list-row-note', n.notes));

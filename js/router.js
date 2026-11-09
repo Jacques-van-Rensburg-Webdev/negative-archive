@@ -63,6 +63,7 @@ export function initRouter(screens) {
     app.classList.toggle('is-pushed', pushed);
     app.classList.toggle('is-wide', Boolean(screen.wide)); // desktop: full Content width, not the 640 column
     app.classList.toggle('is-timer', Boolean(screen.timer)); // Darkroom timer colours
+    document.body.classList.toggle('is-timer-screen', Boolean(screen.timer));
     back.hidden = !pushed;
     title.classList.toggle('text-mono', Boolean(screen.titleMono));
 

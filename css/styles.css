@@ -1199,8 +1199,8 @@ a.chip { color: var(--color-text); text-decoration: none; }
   --timer-danger: var(--timer-safe-danger);
   --timer-ring: var(--timer-safe-ring);
 }
-body:has(.app.is-timer) { background: var(--timer-bg); }
-body:has(.app.is-timer.is-safelight) { background: var(--timer-safe-bg); }
+body.is-timer-screen { background: var(--timer-bg); }
+body.is-timer-screen.is-safelight { background: var(--timer-safe-bg); }
 
 .timer-link { margin-inline-end: var(--space-1); }
 .timer-panel {

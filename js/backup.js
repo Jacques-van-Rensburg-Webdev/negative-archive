@@ -1,45 +1,67 @@
-// Backup: the whole database as one JSON file. Images (Blobs) are stored as base64 inside it,
-// because a .zip would need a library. Restore replaces everything in one transaction.
+// Backup: the whole database as one file. A short header, the records as JSON, then each image's
+// original bytes one after another. Nothing is joined into one big string, so the file can be
+// larger than a browser's longest string. Older .json backups (images as base64) still restore.
 
 import { STORES } from './db.js';
 
 const APP = 'negative-archive';
-const FORMAT = 1;
-
-function blobToBase64(blob) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result).split(',')[1] || '');
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(blob);
-  });
-}
+const MAGIC = 'NEGATIVE-ARCHIVE-BACKUP';
+const FORMAT = 2;
+const JSON_FORMAT = 1;
+const HEADER_LIMIT = 64; // bytes that always hold the first two lines
+const URL_LIFETIME_MS = 60 * 1000; // long enough for a large file to start saving
 
 function base64ToBlob(data, type) {
   const bytes = Uint8Array.from(atob(data), (char) => char.charCodeAt(0));
   return new Blob([bytes], { type });
 }
 
-/** Reads every store. Resolves with a plain object ready for JSON.stringify. */
-export async function createBackup(db) {
+/** Builds the backup file from every store. Resolves with { file, exportedAt, stores }. */
+export async function createBackupFile(db) {
   const stores = await db.transaction(STORES, 'readonly', async (t) => {
     const all = {};
     for (const name of STORES) all[name] = await t.getAll(name);
     return all;
   });
-  // Blobs are converted after the transaction, since FileReader would let it close.
-  stores.blobs = await Promise.all(stores.blobs.map(async ({ blob, ...rest }) => ({
-    ...rest,
-    type: blob?.type || '',
-    data: blob ? await blobToBase64(blob) : '',
-  })));
-  return { app: APP, format: FORMAT, exportedAt: new Date().toISOString(), stores };
+  let offset = 0;
+  const images = [];
+  const blobs = stores.blobs.map(({ blob, ...rest }) => {
+    const entry = { ...rest, type: blob?.type || '', offset, size: blob?.size || 0 };
+    if (blob) images.push(blob);
+    offset += entry.size;
+    return entry;
+  });
+  const exportedAt = new Date().toISOString();
+  const encoder = new TextEncoder();
+  const manifest = encoder.encode(JSON.stringify({ app: APP, format: FORMAT, exportedAt, stores: { ...stores, blobs } }));
+  const header = encoder.encode(`${MAGIC}\n${manifest.length}\n`);
+  const file = new Blob([header, manifest, ...images], { type: 'application/octet-stream' });
+  return { file, exportedAt, stores };
 }
 
-/** Checks a parsed backup file. Returns a list of errors (empty when it can be restored). */
+/** Reads a chosen file, new format or older .json. Rejects if it isn't a complete backup. */
+export async function readBackupFile(file) {
+  const start = await file.slice(0, HEADER_LIMIT).text();
+  if (start.startsWith(`${MAGIC}\n`)) {
+    const [magic, length] = start.split('\n');
+    const manifestStart = magic.length + length.length + 2;
+    const dataStart = manifestStart + Number(length);
+    const backup = JSON.parse(await file.slice(manifestStart, dataStart).text());
+    const end = dataStart + (backup.stores?.blobs || []).reduce((sum, b) => sum + b.size, 0);
+    if (file.size < end) throw new Error('This backup file is incomplete.');
+    backup.stores.blobs = backup.stores.blobs.map(({ offset, size, type, ...rest }) => (
+      { ...rest, blob: file.slice(dataStart + offset, dataStart + offset + size, type) }
+    ));
+    return backup;
+  }
+  if (!start.trimStart().startsWith('{')) throw new Error('This is not a Negative Archive backup.');
+  return JSON.parse(await file.text());
+}
+
+/** Checks a backup. Returns a list of errors (empty when it can be restored). */
 export function validateBackup(backup) {
   if (!backup || backup.app !== APP) return ['This is not a Negative Archive backup.'];
-  if (backup.format !== FORMAT) return [`Backup format ${backup.format} is not supported.`];
+  if (backup.format !== FORMAT && backup.format !== JSON_FORMAT) return [`Backup format ${backup.format} is not supported.`];
   const missing = STORES.filter((name) => !Array.isArray(backup.stores?.[name]));
   return missing.length ? [`Backup is missing: ${missing.join(', ')}.`] : [];
 }
@@ -48,7 +70,9 @@ export function validateBackup(backup) {
 export async function restoreBackup(db, backup) {
   const errors = validateBackup(backup);
   if (errors.length) throw new Error(errors.join(' '));
-  const blobs = backup.stores.blobs.map(({ data, type, ...rest }) => ({ ...rest, blob: base64ToBlob(data, type) }));
+  const blobs = backup.format === JSON_FORMAT
+    ? backup.stores.blobs.map(({ data, type, ...rest }) => ({ ...rest, blob: base64ToBlob(data, type) }))
+    : backup.stores.blobs;
   return db.transaction(STORES, 'readwrite', async (t) => {
     const counts = {};
     for (const name of STORES) {
@@ -62,20 +86,19 @@ export async function restoreBackup(db, backup) {
   });
 }
 
-/** Saves the backup as a file download, and records when. */
+/** Saves the backup as a file download, and records when. Resolves with its counts and size. */
 export async function downloadBackup(db) {
-  const backup = await createBackup(db);
-  const file = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+  const { file, exportedAt, stores } = await createBackupFile(db);
   const url = URL.createObjectURL(file);
   const link = document.createElement('a');
   link.href = url;
-  link.download = `negative-archive-backup-${backup.exportedAt.slice(0, 10)}.json`;
+  link.download = `negative-archive-backup-${exportedAt.slice(0, 10)}.nabackup`;
   document.body.append(link);
   link.click();
   link.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-  await db.put('meta', { key: 'last-backup', value: { at: backup.exportedAt } });
-  return backup;
+  setTimeout(() => URL.revokeObjectURL(url), URL_LIFETIME_MS);
+  await db.put('meta', { key: 'last-backup', value: { at: exportedAt } });
+  return { negatives: stores.negatives.length, rolls: stores.rolls.length, size: file.size };
 }
 
 export const BACKUP_REMINDER_DAYS = 7;

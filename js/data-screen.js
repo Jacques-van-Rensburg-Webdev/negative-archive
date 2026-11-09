@@ -1,7 +1,9 @@
 // #/data: what's in the database, spreadsheet import, and backup / restore.
 // A pushed screen (no tab bar), reached from the gear button in the Archive header.
 
-import { backupAgeText, backupOverdue, backupStatus, downloadBackup, restoreBackup, validateBackup } from './backup.js';
+import {
+  backupAgeText, backupOverdue, backupStatus, downloadBackup, readBackupFile, restoreBackup, validateBackup,
+} from './backup.js';
 import { getDb, onChange } from './db.js';
 import { applyImport, planImport } from './import.js';
 import { renderImportPreview } from './import-preview.js';
@@ -34,12 +36,14 @@ const TEMPLATE = `
     <p class="text-sm text-muted">Everything is stored on this phone only. Export a backup now and then, and keep it somewhere safe.</p>
     <button class="button button-secondary button-block" type="button" data-export>Export backup</button>
     <button class="button button-secondary button-block" type="button" data-restore>Restore from backup</button>
-    <input type="file" accept=".json,application/json" hidden data-restore-input>
+    <input type="file" hidden data-restore-input>
     <p class="text-xs text-muted" data-install-hint hidden>Install to the Home Screen (Share → Add to Home Screen) so iPhone keeps your data.</p>
     <p class="text-sm" role="status" data-status="backup"></p>
   </section>
 `;
 
+const MB = 1024 * 1024;
+const formatSize = (bytes) => (bytes >= 1024 * MB ? `${(bytes / (1024 * MB)).toFixed(1)} GB` : `${Math.max(1, Math.round(bytes / MB))} MB`);
 const formatDate = (iso) => new Date(iso).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
 
 async function refreshStats(root, db) {
@@ -108,8 +112,8 @@ function renderPage() {
 
   root.querySelector('[data-export]').addEventListener('click', async () => {
     try {
-      const backup = await downloadBackup(await getDb());
-      say(`Backup saved: ${backup.stores.negatives.length} negatives, ${backup.stores.rolls.length} rolls.`, 'backup');
+      const { negatives, rolls, size } = await downloadBackup(await getDb());
+      say(`Backup saved: ${negatives} negatives, ${rolls} rolls, ${formatSize(size)}.`, 'backup');
     } catch (error) {
       say(`Backup failed: ${error.message}`, 'backup');
     }
@@ -121,7 +125,7 @@ function renderPage() {
     restoreInput.value = '';
     if (!file) return;
     try {
-      const backup = JSON.parse(await file.text());
+      const backup = await readBackupFile(file);
       const errors = validateBackup(backup);
       if (errors.length) { say(errors.join(' '), 'backup'); return; }
       const when = formatDate(backup.exportedAt);

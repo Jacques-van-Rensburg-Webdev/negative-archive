@@ -1030,6 +1030,21 @@ a.chip { color: var(--color-text); text-decoration: none; }
   padding-bottom: var(--space-3);
   color: var(--color-text-muted);
 }
+.negative-image-attach {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-0-5);
+  padding: 0 0 var(--space-3);
+  border: 0;
+  background: transparent;
+  color: var(--color-text-muted);
+}
+.negative-image-attach:hover:not(:disabled) { color: var(--color-text); }
+.negative-image-attach:focus-visible { outline-offset: calc(var(--border-width-thick) * -1); }
 .negative-edge {
   position: absolute;
   inset: auto 0 0;

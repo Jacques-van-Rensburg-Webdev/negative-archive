@@ -1,6 +1,6 @@
 // The scans were renamed on the computer ('R1-09400-0003.TIF' → 'R001_Fomapan-400_2026-08_0003.TIF').
 // This brings stored file names in line when the app starts, also after restoring an older backup.
-// Only names still in the old 'R1-' style change, on the rolls listed here.
+// Only names still in the old 'R1-' style, or with the 'Formapan-400' misspelling, change, on the rolls listed here.
 
 const RENAMED_ROLLS = {
   R001: 'Fomapan-400_2026-08',
@@ -16,6 +16,7 @@ const OLD_EDIT = /^R1-\d{5}-(\d{4}) ?EDT(\d+)\.(\w+)$/;
 export function currentFileName(rollId, name) {
   const suffix = RENAMED_ROLLS[rollId];
   if (!suffix || !name) return name;
+  if (name.includes('Formapan-400')) return name.replace('Formapan-400', 'Fomapan-400');
   const trimmed = name.trim();
   const scan = OLD_SCAN.exec(trimmed);
   if (scan) return `${rollId}_${suffix}_${scan[1]}.${scan[2]}`;

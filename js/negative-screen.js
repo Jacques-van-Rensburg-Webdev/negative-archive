@@ -6,6 +6,7 @@ import { getDb } from './db.js';
 import { renderFilmStrip } from './film-strip.js';
 import { blobUrl, previewUrls } from './files.js';
 import { inlineSetRow } from './inline-set.js';
+import { attachControls, noPreview } from './negative-attach.js';
 import { detailSections, el, heading, shotSection, statusPills } from './negative-sections.js';
 import { postBlock } from './post-block.js';
 import { frameLayout } from './formats.js';
@@ -26,8 +27,8 @@ function stepButton(label, icon, targetId) {
   return button;
 }
 
-// Image area (full-bleed): the chosen version, or a placeholder with the file name.
-async function imageArea(db, n, version) {
+// Image area (full-bleed): the chosen version, or a button to attach the file.
+async function imageArea(db, n, version, state, report) {
   const area = el('div', 'full-bleed flush-top negative-image');
   const isEdit = version === 'edit';
   const scanUrl = await blobUrl(db, n.thumbBlobId || n.scanBlobId);
@@ -35,18 +36,18 @@ async function imageArea(db, n, version) {
   const refUrl = !isEdit && !scanUrl ? await blobUrl(db, n.refThumbBlobId) : undefined;
   const url = isEdit ? await blobUrl(db, n.editThumbBlobId || n.editBlobId) : scanUrl || refUrl;
   const fileName = isEdit ? n.editedFile : n.scanFile;
-  const placeholder = el('span', 'negative-image-placeholder');
-  placeholder.append(el('span', 'text-sm', isEdit ? 'No edit attached' : 'No scan attached'));
+  const kind = isEdit ? 'edit' : 'scan';
+  const hasFile = Boolean(isEdit ? n.editBlobId : n.scanBlobId);
+  const fallback = () => (hasFile ? [noPreview(kind, fileName)] : attachControls(db, n, kind, fileName, state.busy, report));
   if (refUrl) area.append(el('span', 'negative-image-note text-xs', 'Reference photo from Shoot'));
-  if (fileName) placeholder.append(el('span', 'text-xs text-mono', fileName));
   if (url) {
     const img = el('img', `negative-image-img${version === 'negative' ? ' is-inverted-image' : ''}`);
     img.alt = `${n.subject || n.id}, ${version}`;
     img.src = url;
-    img.addEventListener('error', () => img.replaceWith(placeholder));
+    img.addEventListener('error', () => img.replaceWith(...fallback()));
     area.append(img);
   } else {
-    area.append(placeholder);
+    area.append(...fallback());
   }
   const edge = el('span', 'negative-edge');
   edge.append(el('span', '', (n.filmStock || '').toUpperCase()), el('span', '', `▸ ${n.frameLabel || n.frame || ''}`));
@@ -115,18 +116,29 @@ async function fill(root, db, id, state, ctx) {
   ]);
 
   if (!state.version) state.version = (n.editThumbBlobId || n.editBlobId) ? 'edit' : 'scan';
-  const image = await imageArea(db, n, state.version);
+  const report = (text, busy = false) => {
+    Object.assign(state, { message: text, busy });
+    const line = root.querySelector('[data-attach-status]');
+    if (line) { line.textContent = text; line.hidden = !text; }
+    root.querySelectorAll('.negative-image-attach').forEach((button) => { button.disabled = busy; });
+  };
+  const image = await imageArea(db, n, state.version, state, report);
   const switcher = el('div', 'mt-2');
   switcher.append(versionSwitch(state.version));
   switcher.addEventListener('change', async (event) => {
     state.version = event.target.dataset.version;
-    root.querySelector('.negative-image').replaceWith(await imageArea(db, n, state.version));
+    report('', state.busy);
+    root.querySelector('.negative-image').replaceWith(await imageArea(db, n, state.version, state, report));
   });
 
   // Image at 0, switch space-2 below, heading space-3 below that, pills space-2 below.
   // Desktop: image and switch in columns 1–2, everything else in columns 3–4.
   const media = el('section', 'span-4 negative-media');
-  media.append(image, switcher);
+  const status = el('p', 'text-sm text-muted mt-1', state.message);
+  status.dataset.attachStatus = '';
+  status.setAttribute('role', 'status');
+  status.hidden = !state.message;
+  media.append(image, switcher, status);
   const pills = statusPills(n);
   pills.classList.add('mt-2');
   const head = el('section', 'span-4 negative-head');
@@ -146,7 +158,7 @@ async function fill(root, db, id, state, ctx) {
 function render(ctx) {
   // Content: image block first, then sections space-4 apart
   const root = el('div', 'grid grid-sections');
-  const state = { version: null };
+  const state = { version: null, message: '', busy: false };
   getDb().then((db) => {
     fill(root, db, ctx.params.id, state, ctx);
     watch(root, db, () => fill(root, db, ctx.params.id, state, ctx));

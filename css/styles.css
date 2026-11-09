@@ -494,6 +494,7 @@ a.chip { color: var(--color-text); text-decoration: none; }
 .film-strip > li { display: flex; }
 .film-frame {
   flex: 1;
+  min-width: 0; /* a long edge label must not widen the frame past its column */
   display: flex;
   flex-direction: column;
   gap: var(--space-0-5);
@@ -522,6 +523,7 @@ a.chip { color: var(--color-text); text-decoration: none; }
 .film-frame-dot.is-edited { background: var(--color-text); }
 .film-frame-edge {
   display: flex;
+  flex-wrap: wrap; /* flags drop to a second line when they don't fit beside the number */
   justify-content: space-between;
   font-family: var(--font-mono);
   font-size: var(--text-xs);
@@ -535,6 +537,7 @@ a.chip { color: var(--color-text); text-decoration: none; }
 }
 .film-frame-flag {
   flex-shrink: 0;
+  margin-left: auto;
   color: var(--color-text-muted);
 }
 

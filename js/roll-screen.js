@@ -8,6 +8,7 @@ import { getDb } from './db.js';
 import { renderFilmStrip } from './film-strip.js';
 import { previewUrls } from './files.js';
 import { inlineSetRow } from './inline-set.js';
+import { deleteRollBlock } from './roll-delete.js';
 import { replaceQuery } from './router.js';
 import { frameLayout, formatText } from './formats.js';
 import { setLabNumber } from './shots.js';
@@ -66,6 +67,15 @@ function legend() {
   const row = el('p', 'legend text-xs text-muted');
   row.innerHTML = '<span><span class="legend-dot is-to-edit"></span>To edit</span><span><span class="legend-dot is-edited"></span>Edited</span><span>U under · O over · S soft</span>';
   return row;
+}
+
+// A roll with no negatives yet: where to carry on (Sync has its own button)
+function nextStepLink(roll) {
+  const id = encodeURIComponent(roll.id);
+  if (roll.status === 'at_lab') return [];
+  const link = el('a', 'span-4 button button-secondary button-block', roll.status === 'shooting' ? 'Go to Shoot' : 'Log negatives');
+  link.href = roll.status === 'shooting' ? `#/shoot?roll=${id}` : `#/add?roll=${id}`;
+  return [link];
 }
 
 function segmented(current) {
@@ -141,14 +151,18 @@ async function fill(root, db, rollId, state) {
   });
   showView();
 
-  const pending = unsyncedShots(await db.byIndex('shots', 'rollId', rollId));
+  const shots = await db.byIndex('shots', 'rollId', rollId);
+  const pending = unsyncedShots(shots);
   const sync = el('a', 'span-4 button button-secondary button-block', `Sync ${pending.length} shot${pending.length === 1 ? '' : 's'} from the photo log`);
   sync.href = `#/shoot/sync?roll=${encodeURIComponent(rollId)}`;
 
-  const foot = el('div', 'span-4 mb-6');
+  const foot = el('div', 'span-4');
   foot.append(negatives.length ? legend() : el('p', 'empty-state text-sm text-muted', 'No negatives on this roll yet.'));
 
-  root.replaceChildren(details, storage, ...(pending.length ? [sync] : []), ...tiles, switcher, body, foot);
+  // Content, columns 1–4, last block: Remove roll and delete data
+  const remove = deleteRollBlock(db, roll, negatives.length, shots.length);
+
+  root.replaceChildren(details, ...(negatives.length ? [] : nextStepLink(roll)), storage, ...(pending.length ? [sync] : []), ...tiles, switcher, body, foot, remove);
 }
 
 function render({ params, query }) {

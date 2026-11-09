@@ -44,15 +44,13 @@ function searchBlock() {
   return block;
 }
 
-// A roll with no negatives yet, by where it is: in the camera (→ Shoot), at the lab, or back (→ Add)
+// A roll with no negatives yet, by where it is: in the camera, at the lab, or back
 function notLoggedCard(roll, shotCount) {
   const shots = `${shotCount} shot${shotCount === 1 ? '' : 's'} logged`;
-  const [title, href, action] = {
-    shooting: [`In the camera · ${shots}`, `#/shoot?roll=${encodeURIComponent(roll.id)}`, 'Shoot →'],
-    at_lab: [`At the lab · ${shots}`, shotCount ? `#/shoot/sync?roll=${encodeURIComponent(roll.id)}` : `#/roll/${encodeURIComponent(roll.id)}`, shotCount ? 'Sync →' : 'Open →'],
-  }[roll.status] || ['Back from the lab · not logged', `#/add?roll=${encodeURIComponent(roll.id)}`, 'Log →'];
+  const title = { shooting: `In the camera · ${shots}`, at_lab: `At the lab · ${shots}` }[roll.status] || 'Back from the lab · not logged';
+  const action = 'Open →';
   const card = el('a', 'roll-card is-empty');
-  card.href = href;
+  card.href = `#/roll/${encodeURIComponent(roll.id)}`;
   const head = el('span', 'roll-card-head');
   const text = el('span', 'roll-card-text');
   text.append(el('span', 'text-bold', title));

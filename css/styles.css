@@ -226,6 +226,7 @@ button { cursor: pointer; }
   font-weight: var(--weight-heavy);
 }
 .button-secondary { background: transparent; }
+.button-danger { border-color: var(--color-danger); color: var(--color-danger); }
 
 /* Small pill action (header "PDF", "Sync"). 32 tall, with a 48 tall tap area. */
 .button-sm {

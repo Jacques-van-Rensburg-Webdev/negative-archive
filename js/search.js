@@ -1,9 +1,9 @@
 // Search: keyword + filters over the archive, with live counts per filter option.
-// Pure functions; the screen keeps the state ({ q, film, date, camera, lens, lighting }).
+// Pure functions; the screen keeps the state ({ q, process, film, date, camera, lens, lighting }).
 
 import { formatMonth } from './archive-data.js';
 
-export const FACETS = ['film', 'date', 'camera', 'lens', 'lighting'];
+export const FACETS = ['process', 'film', 'date', 'camera', 'lens', 'lighting'];
 
 /** Lower case, accents removed: 'Dämeritzsee' → 'dameritzsee'. */
 export const normalise = (text) => String(text ?? '').toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '');
@@ -27,12 +27,13 @@ export function buildEntries({ negatives, rolls, cameras, lenses, shots = [] }) 
       film, camera, lens, n.aperture, n.shutter, shot?.note, lighting.items.join(' '), shot?.lighting?.setup,
     ].filter(Boolean).join(' '));
     const month = /^\d{4}-\d{2}/.test(n.dateTaken || '') ? n.dateTaken.slice(0, 7) : '';
-    return { negative: n, text, film, camera, cameraId: n.cameraId || '', lens, lensId: n.lensId || '', month, lighting };
+    return { negative: n, text, process: roll?.process || 'bw', film, camera, cameraId: n.cameraId || '', lens, lensId: n.lensId || '', month, lighting };
   });
 }
 
 function matches(entry, facet, value) {
   switch (facet) {
+    case 'process': return entry.process === value;
     case 'film': return entry.film === value;
     case 'camera': return entry.cameraId === value;
     case 'lens': return entry.lensId === value;
@@ -68,6 +69,7 @@ export const isEmptyState = (state) => !state.q && FACETS.every((facet) => !stat
 function optionValues(entries, facet) {
   const pairs = new Map();
   entries.forEach((e) => {
+    if (facet === 'process') pairs.set(e.process, e.process === 'colour' ? 'Colour' : 'B&W');
     if (facet === 'film' && e.film) pairs.set(e.film, e.film);
     if (facet === 'camera' && e.cameraId) pairs.set(e.cameraId, e.camera || e.cameraId);
     if (facet === 'lens' && e.lensId) pairs.set(e.lensId, e.lens || e.lensId);

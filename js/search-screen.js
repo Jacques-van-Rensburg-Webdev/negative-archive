@@ -1,5 +1,5 @@
 // #/search: keyword as you type, filter chips with live counts, results newest first.
-// State lives in the URL (?q=…&film=…&date=…&open=film), so Back returns to the same results.
+// State lives in the URL (?q=…&process=colour&film=…&open=film), so Back returns to the same results.
 
 import { formatMonth, loadArchive, watch } from './archive-data.js';
 import { getDb } from './db.js';
@@ -9,8 +9,8 @@ import {
   FACETS, applySearch, buildEntries, facetOptions, hasLightingData, isEmptyState, valueLabel,
 } from './search.js';
 
-const FACET_NAMES = { film: 'Film', date: 'Date', camera: 'Camera', lens: 'Lens', lighting: 'Lighting' };
-const PANEL_TITLES = { film: 'Film stock', date: 'Date taken', camera: 'Camera', lens: 'Lens', lighting: 'Lighting' };
+const FACET_NAMES = { process: 'Type', film: 'Film', date: 'Date', camera: 'Camera', lens: 'Lens', lighting: 'Lighting' };
+const PANEL_TITLES = { process: 'Black & white or colour', film: 'Film stock', date: 'Date taken', camera: 'Camera', lens: 'Lens', lighting: 'Lighting' };
 const SEARCH_ICON = '<svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>';
 
 function el(tag, className, text) {

@@ -1,4 +1,4 @@
-// Archive tab: totals, then a card per roll (newest first). Rolls with no negatives yet
+// Archive tab: All / B&W / Colour, totals, then a card per roll (newest first). Rolls with no negatives yet
 // show as dashed "not logged" cards that open the Add form for that roll.
 
 import {
@@ -9,9 +9,11 @@ import { getDb } from './db.js';
 import { renderFilmStrip } from './film-strip.js';
 import { previewUrls } from './files.js';
 import { frameLayout, formatText } from './formats.js';
+import { replaceQuery } from './router.js';
 
 const SEARCH_ICON = '<svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>';
 const SEARCH_FACETS = [['film', 'Film'], ['date', 'Date'], ['camera', 'Camera'], ['lens', 'Lens']];
+const PROCESS_TABS = [['all', 'All'], ['bw', 'B&W'], ['colour', 'Colour']];
 const GEAR_ICON = '<svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg>';
 
 function el(tag, className, text) {
@@ -28,16 +30,17 @@ function statTile(value, label, attention = false) {
 }
 
 // Search entry: a link styled as the search field, and chips that open Search with a filter panel open
-function searchBlock() {
+function searchBlock(process) {
+  const type = process === 'all' ? '' : `process=${process}`;
   const block = el('section', 'span-4 stack-2');
   const field = el('a', 'search-field');
-  field.href = '#/search';
+  field.href = `#/search${type ? `?${type}` : ''}`;
   field.innerHTML = SEARCH_ICON;
   field.append(el('span', 'text-muted', 'Search by keyword, film, date, gear…'));
   const chips = el('div', 'chip-row');
   SEARCH_FACETS.forEach(([facet, label]) => {
     const chip = el('a', 'chip', label);
-    chip.href = `#/search?open=${facet}`;
+    chip.href = `#/search?open=${facet}${type ? `&${type}` : ''}`;
     chips.append(chip);
   });
   block.append(field, chips);
@@ -87,8 +90,30 @@ function rollCard(roll, negatives, urls) {
   return card;
 }
 
-async function fill(root, db) {
-  const { rolls, negatives } = await loadArchive(db);
+function processTabs(current) {
+  const group = el('div', 'segmented span-4 desktop-half');
+  group.setAttribute('role', 'radiogroup');
+  group.setAttribute('aria-label', 'Film type');
+  PROCESS_TABS.forEach(([key, label]) => {
+    const button = el('button', 'segment', label);
+    button.type = 'button';
+    button.dataset.process = key;
+    button.setAttribute('role', 'radio');
+    button.setAttribute('aria-checked', String(key === current));
+    button.tabIndex = key === current ? 0 : -1;
+    group.append(button);
+  });
+  return group;
+}
+
+async function fill(root, db, state) {
+  state.run += 1;
+  const { run, process } = state;
+  const archive = await loadArchive(db);
+  const inTab = (roll) => process === 'all' || (roll.process || 'bw') === process;
+  const rolls = archive.rolls.filter(inTab);
+  const rollIds = new Set(rolls.map((r) => r.id));
+  const negatives = process === 'all' ? archive.negatives : archive.negatives.filter((n) => rollIds.has(n.rollId));
   const shotCounts = new Map();
   (await db.getAll('shots')).forEach((s) => shotCounts.set(s.rollId, (shotCounts.get(s.rollId) || 0) + 1));
   const byRoll = groupByRoll(negatives);
@@ -111,7 +136,8 @@ async function fill(root, db) {
   empty.forEach((roll) => list.append(notLoggedCard(roll, shotCounts.get(roll.id) || 0)));
   logged.forEach((roll) => list.append(rollCard(roll, byRoll.get(roll.id), urls)));
   if (!rolls.length) {
-    const note = el('p', 'empty-state text-sm text-muted', 'No rolls yet. Import the spreadsheet or restore a backup from Data (the gear, top right).');
+    const tabName = PROCESS_TABS.find(([key]) => key === process)[1];
+    const note = el('p', 'empty-state text-sm text-muted', process === 'all' ? 'No rolls yet. Import the spreadsheet or restore a backup from Data (the gear, top right).' : `No ${tabName} rolls yet.`);
     list.append(note);
   }
 
@@ -125,15 +151,24 @@ async function fill(root, db) {
     reminder.push(link);
   }
 
-  root.replaceChildren(...reminder, searchBlock(), ...tiles, list);
+  if (run !== state.run) return; // the tab changed while this was loading
+  root.replaceChildren(...reminder, state.tabs, searchBlock(process), ...tiles, list);
 }
 
-function render() {
-  // Content, columns 1–4: search at 24, stat tiles space-4 below, then the rolls list space-4 below
+function render({ query }) {
+  // Content, columns 1–4: tabs at 24, search space-4 below, stat tiles space-4 below, then the rolls list space-4 below
   const root = el('div', 'grid grid-sections');
+  const asked = query.get('process');
+  const state = { process: PROCESS_TABS.some(([key]) => key === asked) ? asked : 'all', run: 0 };
+  state.tabs = processTabs(state.process);
   getDb().then((db) => {
-    fill(root, db);
-    watch(root, db, () => fill(root, db));
+    state.tabs.addEventListener('change', (event) => {
+      state.process = event.target.dataset.process;
+      replaceQuery({ process: state.process === 'all' ? null : state.process });
+      fill(root, db, state);
+    });
+    fill(root, db, state);
+    watch(root, db, () => fill(root, db, state));
   });
   return root;
 }

@@ -3,7 +3,9 @@ import { initControls } from './controls.js';
 import { dataScreen } from './data-screen.js';
 import { devComponents } from './dev-components.js';
 import { exportScreen } from './export-screen.js';
+import { getDb } from './db.js';
 import { feedScreen } from './feed-screen.js';
+import { updateFileNames } from './file-names.js';
 import { initGridOverlay } from './grid-overlay.js';
 import { addScreen, editScreen } from './negative-form.js';
 import { negativeScreen } from './negative-screen.js';
@@ -36,6 +38,7 @@ function init() {
   });
   initPwa();
   initGridOverlay();
+  getDb().then(updateFileNames).catch(() => {}); // tried again next time the app opens
 }
 
 init();

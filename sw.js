@@ -1,7 +1,7 @@
 // Service worker: precaches the app shell (pages, styles, scripts, fonts, icons).
 // Bump VERSION whenever a shell file changes so clients pick up the new copy.
 
-const VERSION = 'v39';
+const VERSION = 'v40';
 const SHELL_CACHE = `shell-${VERSION}`;
 
 const SHELL_FILES = [
@@ -79,6 +79,7 @@ const SHELL_FILES = [
   'js/timer-sheet.js',
   'js/timer-sound.js',
   'js/timer-steps.js',
+  'js/version.js',
   'js/shoot-controls.js',
   'js/shoot-screen.js',
   'js/shots.js',

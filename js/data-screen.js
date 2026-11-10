@@ -9,6 +9,7 @@ import { getDb, onChange } from './db.js';
 import { applyImport, planImport } from './import.js';
 import { renderImportPreview } from './import-preview.js';
 import { isInstalled, storageState } from './pwa.js';
+import { APP_VERSION } from './version.js';
 
 const TEMPLATE = `
   <!-- Content, columns 1–4, at 24 -->
@@ -20,6 +21,7 @@ const TEMPLATE = `
       <div class="field-row"><span class="field-key">Last import</span><span class="field-value" data-stat="last-import">Never</span></div>
       <div class="field-row"><span class="field-key">Last backup</span><span class="field-value" data-stat="last-backup">Never</span></div>
       <div class="field-row"><span class="field-key">Storage</span><span class="field-value" data-stat="storage">–</span></div>
+      <div class="field-row"><span class="field-key">Version</span><span class="field-value" data-stat="version">–</span></div>
     </div>
   </section>
 
@@ -78,6 +80,7 @@ async function refreshStats(root, db) {
   };
   set('negatives', String(negatives));
   set('rolls', String(rolls));
+  set('version', `${APP_VERSION} · ${isInstalled() ? 'installed app' : 'browser'}`);
   set('last-import', lastImport ? formatDate(lastImport.value.at) : 'Never');
   set('last-backup', backupAgeText(backup)).classList.toggle('text-edge', backupOverdue(backup, negatives));
   const used = storage.usage ? ` · ${(storage.usage / 1024 / 1024).toFixed(1)} MB` : '';

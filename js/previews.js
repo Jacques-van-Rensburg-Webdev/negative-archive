@@ -13,18 +13,29 @@ const wanted = new WeakMap(); // element → { id, full, db, near, loading }
 const shown = new WeakMap(); // element → object URL
 const building = new Map(); // preview ID → promise, so two frames don't build the same thumbnail
 
+// Builds run one after another: decoding a 1280px preview takes about 4 MB, and a roll asks for 37 at once.
+let queue = Promise.resolve();
+function oneAtATime(fn) {
+  const turn = queue.then(fn, fn);
+  queue = turn.catch(() => {});
+  return turn;
+}
+
+async function buildThumbnail(db, previewId) {
+  const preview = await db.get('blobs', previewId);
+  if (!preview?.blob) return null;
+  const blob = await resizeImage(preview.blob, THUMB_SIZE);
+  if (!blob) return preview.blob;
+  await db.put('blobs', { id: thumbId(previewId), blob, name: `${preview.name} (thumbnail)`, createdAt: new Date().toISOString() });
+  return blob;
+}
+
 /** The small thumbnail for a preview, made and stored on first use. The preview itself if it can't be resized; null when there's no preview. */
 export function thumbnailBlob(db, previewId) {
   if (!building.has(previewId)) {
     building.set(previewId, (async () => {
       const small = await db.get('blobs', thumbId(previewId));
-      if (small?.blob) return small.blob;
-      const preview = await db.get('blobs', previewId);
-      if (!preview?.blob) return null;
-      const blob = await resizeImage(preview.blob, THUMB_SIZE);
-      if (!blob) return preview.blob;
-      await db.put('blobs', { id: thumbId(previewId), blob, name: `${preview.name} (thumbnail)`, createdAt: new Date().toISOString() });
-      return blob;
+      return small?.blob || oneAtATime(() => buildThumbnail(db, previewId));
     })().finally(() => building.delete(previewId)));
   }
   return building.get(previewId);
@@ -64,9 +75,11 @@ const observer = 'IntersectionObserver' in window
   ? new IntersectionObserver((entries) => {
     entries.forEach(({ target, isIntersecting }) => {
       const want = wanted.get(target);
-      if (!target.isConnected || !want) { release(target); wanted.delete(target); observer.unobserve(target); return; }
-      want.near = isIntersecting;
-      if (isIntersecting) load(target); else release(target);
+      if (!want) { observer.unobserve(target); return; }
+      // Screens build their elements before putting them on the page, so the first notification can
+      // arrive while the element is still detached: that's "not near", not "gone".
+      want.near = isIntersecting && target.isConnected;
+      if (want.near) load(target); else release(target);
     });
   }, { rootMargin: NEAR_SCREEN })
   : null;

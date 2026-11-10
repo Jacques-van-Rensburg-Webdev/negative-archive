@@ -3,6 +3,7 @@
 import { formatTime } from './timer-calc.js';
 import { SOURCES } from './timer-data.js';
 import { createDial } from './timer-dial.js';
+import { createChemicalsPanel } from './timer-chemicals.js';
 import { session } from './timer-session.js';
 import { renderSetup } from './timer-setup.js';
 import { createSheet } from './timer-sheet.js';
@@ -91,6 +92,7 @@ function render() {
 
   const setup = el('section', 'span-4 timer-setup timer-panel stack-2');
   const sheet = createSheet(session);
+  const chemicals = createChemicalsPanel(session);
 
   const drawSetup = () => setup.replaceChildren(...renderSetup(session));
 
@@ -114,6 +116,7 @@ function render() {
   const stop = session.subscribe((kind) => {
     if (!root.isConnected) { stop(); return; }
     if (kind === 'plan') { drawSetup(); sheet.rebuild(); }
+    if (kind === 'bottles') { drawSetup(); chemicals.refresh(); }
     if (kind === 'state') drawState();
     if (kind === 'frame') drawFrame();
   });
@@ -122,7 +125,8 @@ function render() {
   sheet.rebuild();
   drawState();
   drawFrame();
-  root.append(prefChips(), face, setup, sheet.root, sourcesBlock());
+  // Content, columns 1–4: dial, setup, My chemicals, process sheet, sources
+  root.append(prefChips(), face, setup, chemicals.root, sheet.root, sourcesBlock());
   return root;
 }
 

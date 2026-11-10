@@ -2,7 +2,7 @@
 // original bytes one after another. Nothing is joined into one big string, so the file can be
 // larger than a browser's longest string. Older .json backups (images as base64) still restore.
 
-import { STORES } from './db.js';
+import { OPTIONAL_STORES, STORES } from './db.js';
 import { THUMB_FIELDS, imageIds } from './image-kinds.js';
 
 const APP = 'negative-archive';
@@ -79,7 +79,7 @@ export async function readBackupFile(file) {
 export function validateBackup(backup) {
   if (!backup || backup.app !== APP) return ['This is not a Negative Archive backup.'];
   if (backup.format !== FORMAT && backup.format !== JSON_FORMAT) return [`Backup format ${backup.format} is not supported.`];
-  const missing = STORES.filter((name) => !Array.isArray(backup.stores?.[name]));
+  const missing = STORES.filter((name) => !OPTIONAL_STORES.includes(name) && !Array.isArray(backup.stores?.[name]));
   return missing.length ? [`Backup is missing: ${missing.join(', ')}.`] : [];
 }
 
@@ -117,8 +117,9 @@ export async function restoreBackup(db, backup, { onProgress } = {}) {
     for (const name of STORES) {
       await t.clear(name);
       if (name === 'blobs') continue;
-      for (const item of backup.stores[name]) await t.put(name, item);
-      result[name] = backup.stores[name].length;
+      const items = backup.stores[name] || []; // a store this backup predates
+      for (const item of items) await t.put(name, item);
+      result[name] = items.length;
     }
     await t.put('meta', { key: 'last-restore', value: { at: new Date().toISOString(), from: backup.exportedAt } });
     return result;

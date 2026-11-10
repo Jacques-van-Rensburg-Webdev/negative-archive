@@ -112,6 +112,13 @@ export function planMerge(local, incoming, imageSizes) {
     const have = new Set(local[store].map((item) => item[key]));
     return incoming[store].filter((item) => !have.has(item[key])).map((item) => [store, item]);
   });
+  // Darkroom bottles: the latest change wins, and the roll count is the higher of the two.
+  const bottles = new Map(local.chemicals.map((b) => [b.id, b]));
+  (incoming.chemicals || []).forEach((b) => {
+    const here = bottles.get(b.id);
+    const merged = { ...(here && (here.updatedAt || '') >= (b.updatedAt || '') ? here : b), rolls: Math.max(here?.rolls || 0, b.rolls || 0) };
+    if (!here || JSON.stringify(merged) !== JSON.stringify(here)) gearPuts.push(['chemicals', merged]);
+  });
   const counters = incoming.meta.filter(isCounter).filter((entry) => entry.value > (metaEntry(local.meta, entry.key)?.value || 0));
 
   // Images: copy what the final records use and this device lacks; drop what only deleted records used.
@@ -137,6 +144,7 @@ export function planMerge(local, incoming, imageSizes) {
 async function readLocal(t) {
   const local = {};
   for (const name of STORES.filter((store) => store !== 'blobs')) local[name] = await t.getAll(name);
+  local.chemicals = local.chemicals || [];
   local.blobKeys = (await t.getAll('blobs')).filter((b) => b.blob?.size > 0).map((b) => b.id);
   return local;
 }

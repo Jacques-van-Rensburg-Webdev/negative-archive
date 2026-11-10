@@ -1,11 +1,14 @@
 // Darkroom timer: the setup panel. Rebuilt whenever the settings change.
+// Each chemical select lists my bottles first ("… · bottle · 7 of 24 rolls"), then the catalogue.
 
+import { bottleLabel } from './chemicals.js';
 import { BW_FILMS, developerOptions } from './timer-calc.js';
 import { BATHS } from './timer-data.js';
 import { COLOUR_FILMS } from './timer-data-kits.js';
 import { AGITATIONS, PUSH_LABELS, availablePush, currentColourFilm, currentKit, kitsFor } from './timer-steps.js';
 
 const PROCESSES = [['bw', 'B&W'], ['c41', 'C-41'], ['e6', 'E-6'], ['ecn2', 'ECN-2']];
+const BOTTLE = 'bottle:';
 
 function el(tag, className, text) {
   const node = document.createElement(tag);
@@ -62,6 +65,16 @@ function temperatureField(value, change) {
   return field;
 }
 
+/** A chemical select: my bottles of this kind first, then the catalogue. Picking a bottle picks its product. */
+function chemicalField(session, kind, labelText, catalogue, current, onProduct, disabled = false) {
+  const s = session.settings;
+  const mine = [...session.bottles().values()].filter((b) => b.kind === kind && (kind !== 'kit' || b.process === s.process));
+  const options = [...mine.map((b) => ({ value: `${BOTTLE}${b.id}`, text: bottleLabel(b) })), ...catalogue];
+  const chosen = session.bottleFor(kind);
+  const value = chosen ? `${BOTTLE}${chosen.id}` : current;
+  return selectField(labelText, options, value, (picked) => (picked.startsWith(BOTTLE) ? session.pickBottle(kind, picked.slice(BOTTLE.length)) : onProduct(picked)), disabled);
+}
+
 /** Builds the panel's contents. session: the timer session. */
 export function renderSetup(session) {
   const s = session.settings;
@@ -74,22 +87,22 @@ export function renderSetup(session) {
     const fixedAgitation = ['rod100', 'caffenol', 'df96'].includes(s.developer);
     fields.append(
       selectField('Film', plainOptions(BW_FILMS), s.film, (film) => change({ film })),
-      selectField('Developer', developerOptions(s.film), s.developer, (developer) => change({ developer })),
+      chemicalField(session, 'developer', 'Developer', developerOptions(s.film), s.developer, (developer) => change({ developer })),
       temperatureField(s.temperature, change),
       selectField('Agitation', AGITATIONS.map(([value, text]) => ({ value, text })), s.agitation, (agitation) => change({ agitation }), fixedAgitation),
     );
     if (s.developer !== 'df96') {
       fields.append(
-        selectField('Stop bath', bathOptions('Stop'), s.stop, (stop) => change({ stop })),
-        selectField('Fixer', bathOptions('Fixer'), s.fixer, (fixer) => change({ fixer })),
+        chemicalField(session, 'stop', 'Stop bath', bathOptions('Stop'), s.stop, (stop) => change({ stop })),
+        chemicalField(session, 'fixer', 'Fixer', bathOptions('Fixer'), s.fixer, (fixer) => change({ fixer })),
+        chemicalField(session, 'hypo', 'Hypo clear', bathOptions('Hypo clear'), s.hypo, (hypo) => change({ hypo })),
       );
     }
-    if (s.developer !== 'df96') fields.append(selectField('Hypo clear', bathOptions('Hypo clear'), s.hypo, (hypo) => change({ hypo })));
-    fields.append(selectField('Wetting agent', bathOptions('Wetting'), s.wetting, (wetting) => change({ wetting })));
+    fields.append(chemicalField(session, 'wetting', 'Wetting agent', bathOptions('Wetting'), s.wetting, (wetting) => change({ wetting })));
   } else {
     fields.append(
       selectField('Film', plainOptions(COLOUR_FILMS[s.process]), currentColourFilm(s), (film) => change({ colourFilm: { ...s.colourFilm, [s.process]: film } })),
-      selectField('Chemistry kit', plainOptions(kitsFor(s.process).map((k) => k.name)), currentKit(s).name, (kit) => change({ kit: { ...s.kit, [s.process]: kit } })),
+      chemicalField(session, 'kit', 'Chemistry kit', plainOptions(kitsFor(s.process).map((k) => k.name)), currentKit(s).name, (kit) => change({ kit: { ...s.kit, [s.process]: kit } })),
     );
   }
 

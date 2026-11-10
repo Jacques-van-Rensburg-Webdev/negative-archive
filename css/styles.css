@@ -1249,6 +1249,9 @@ body.is-timer-screen.is-safelight { background: var(--timer-safe-bg); }
 .timer-row.is-skipped .timer-row-name { text-decoration: line-through; color: var(--color-text-muted); }
 .timer-skip { align-self: flex-start; min-height: var(--size-tap); padding: 0; border: 0; background: transparent; color: var(--timer-amber); text-decoration: underline; }
 .timer-skip:disabled { opacity: var(--timer-pulse-dim); }
+.timer-bottle-status.is-low { color: var(--timer-amber); }
+.timer-bottle-status.is-exhausted, .timer-bottle-status.is-expired { color: var(--color-danger); }
+.timer-mix .input[type="date"] { min-height: var(--size-button); }
 .timer-summary { min-height: var(--size-tap); display: flex; align-items: center; cursor: pointer; }
 .timer-sources { list-style: none; padding: 0; display: flex; flex-direction: column; gap: var(--space-1); }
 .timer-sources a { color: var(--color-text); }

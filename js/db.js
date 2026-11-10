@@ -2,30 +2,33 @@
 // tests use their own names. Fires a 'db-change' event after each write transaction.
 
 export const DB_NAME = 'negative-archive';
-const VERSION = 1;
+const VERSION = 2; // 2: chemicals (darkroom timer bottles)
 
-export const STORES = ['rolls', 'negatives', 'shots', 'cameras', 'lenses', 'filmStocks', 'lightingItems', 'blobs', 'meta'];
+export const STORES = ['rolls', 'negatives', 'shots', 'cameras', 'lenses', 'filmStocks', 'lightingItems', 'blobs', 'meta', 'chemicals'];
+/** Stores added after the first version: an older backup may not have them. */
+export const OPTIONAL_STORES = ['chemicals'];
 
+// Creates whatever stores this version has that the database doesn't yet (first open, or an upgrade).
 function upgrade(idb) {
-  const rolls = idb.createObjectStore('rolls', { keyPath: 'id' });
-  rolls.createIndex('status', 'status');
-
-  const negatives = idb.createObjectStore('negatives', { keyPath: 'id' });
-  negatives.createIndex('rollId', 'rollId');
-  negatives.createIndex('rollFrame', ['rollId', 'frame']);
-  ['dateTaken', 'filmStock', 'cameraId', 'lensId', 'category', 'action', 'social', 'print', 'posted', 'status']
-    .forEach((field) => negatives.createIndex(field, field));
-
-  const shots = idb.createObjectStore('shots', { keyPath: 'id' });
-  shots.createIndex('rollId', 'rollId');
-  shots.createIndex('rollShot', ['rollId', 'shotNumber']);
-
-  idb.createObjectStore('cameras', { keyPath: 'id' });
-  idb.createObjectStore('lenses', { keyPath: 'id' });
-  idb.createObjectStore('filmStocks', { keyPath: 'name' });
-  idb.createObjectStore('lightingItems', { keyPath: 'id' });
-  idb.createObjectStore('blobs', { keyPath: 'id' });
-  idb.createObjectStore('meta', { keyPath: 'key' });
+  const missing = (name) => !idb.objectStoreNames.contains(name);
+  if (missing('rolls')) {
+    idb.createObjectStore('rolls', { keyPath: 'id' }).createIndex('status', 'status');
+  }
+  if (missing('negatives')) {
+    const negatives = idb.createObjectStore('negatives', { keyPath: 'id' });
+    negatives.createIndex('rollId', 'rollId');
+    negatives.createIndex('rollFrame', ['rollId', 'frame']);
+    ['dateTaken', 'filmStock', 'cameraId', 'lensId', 'category', 'action', 'social', 'print', 'posted', 'status']
+      .forEach((field) => negatives.createIndex(field, field));
+  }
+  if (missing('shots')) {
+    const shots = idb.createObjectStore('shots', { keyPath: 'id' });
+    shots.createIndex('rollId', 'rollId');
+    shots.createIndex('rollShot', ['rollId', 'shotNumber']);
+  }
+  ['cameras', 'lenses', 'lightingItems', 'blobs', 'chemicals'].forEach((name) => { if (missing(name)) idb.createObjectStore(name, { keyPath: 'id' }); });
+  if (missing('filmStocks')) idb.createObjectStore('filmStocks', { keyPath: 'name' });
+  if (missing('meta')) idb.createObjectStore('meta', { keyPath: 'key' });
 }
 
 /** Wraps an IDBRequest in a promise. */

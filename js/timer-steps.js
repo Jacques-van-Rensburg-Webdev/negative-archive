@@ -1,5 +1,6 @@
 // Darkroom timer: turns settings into a list of steps, with info lines and warnings.
 
+import { KINDS, adjustForReuse, bottleStatus, findProduct } from './chemicals.js';
 import { computeDeveloper, firstDeveloperWithData, hasData, isTGrain, pushChoices, roundTo5, formatTime } from './timer-calc.js';
 import { BATHS, DEVELOPERS } from './timer-data.js';
 import { COLOUR_FILMS, KITS } from './timer-data-kits.js';
@@ -43,11 +44,42 @@ export const defaultSettings = () => ({
   customSeconds: 0,
   colourFilm: {},
   kit: {},
+  bottles: {}, // chosen bottle per kind ('developer', 'stop', …) or per colour process ('c41', …)
 });
 
 export const kitsFor = (process) => KITS[process];
 export const currentKit = (s) => KITS[s.process].find((k) => k.name === s.kit[s.process]) || KITS[s.process][0];
 export const currentColourFilm = (s) => (COLOUR_FILMS[s.process].includes(s.colourFilm[s.process]) ? s.colourFilm[s.process] : COLOUR_FILMS[s.process][0]);
+
+/** The settings key a bottle of this kind is kept under: the kind, or the process for a colour kit. */
+export const bottleKey = (s, kind) => (kind === 'kit' ? s.process : kind);
+/** The product the settings currently name for this kind. */
+export const productFor = (s, kind) => (kind === 'kit' ? currentKit(s).name : s[kind]);
+
+/** The chosen bottle for this kind, if it's known and still matches the chosen product. bottles: Map id → bottle. */
+export function bottleFor(s, bottles, kind) {
+  const bottle = bottles?.get(s.bottles?.[bottleKey(s, kind)]);
+  return bottle && !bottle.retiredAt && bottle.product === productFor(s, kind) ? bottle : null;
+}
+
+/** Warnings for chosen bottles that should go, for the kinds these steps use. */
+function bottleWarnings(s, bottles, steps) {
+  return KINDS.filter(([kind]) => steps.some((row) => row.kind === kind)).flatMap(([kind, label]) => {
+    const bottle = bottleFor(s, bottles, kind);
+    const status = bottle && bottleStatus(bottle);
+    return status && ['exhausted', 'expired'].includes(status.state) ? [`${label}: ${status.text}.`] : [];
+  });
+}
+
+// Reused chemistry: the maker's rule for this roll number, applied to the developer step
+function applyReuse(developer, label, s, bottles, kind, info) {
+  const bottle = bottleFor(s, bottles, kind);
+  const product = bottle && findProduct(kind, bottle.product);
+  const adjusted = product && adjustForReuse(developer.seconds, product, bottle.rolls);
+  if (!adjusted) return;
+  developer.seconds = adjusted.seconds;
+  info.push(`${adjusted.note} ${label}: ${formatTime(adjusted.seconds)}.`);
+}
 
 /** Which push / pull choices the current settings can use. */
 export function availablePush(s) {
@@ -70,31 +102,36 @@ function washNote(s, isDf96) {
   return 'Ilford: 5–10 min running, or fill-and-invert 5 / 10 / 20. Kodak without hypo clear: 20–30 min';
 }
 
-function bwPlan(s) {
+function bwPlan(s, bottles) {
   const isDf96 = s.developer === 'df96';
   const developer = computeDeveloper(s);
   const devLabel = DEVELOPERS.find(([key]) => key === s.developer)?.[1];
   const timeFor = (b) => (isTGrain(s.film) ? b.tgrain : b.normal);
+  const info = [...developer.info];
+  const product = findProduct('developer', s.developer);
+  if (product?.oneShot) info.push(`${devLabel} is one-shot: discard after use.`);
+  applyReuse(developer, devLabel, s, bottles, 'developer', info);
   const steps = [step('Pre-wash', 60, 'Water at developer temperature', 'rotary', { optional: true, skipped: true })];
-  steps.push(step(isDf96 ? 'Monobath' : 'Developer', developer.seconds, parts(devLabel, `${s.temperature} °C`), developer.preset, { isDeveloper: true, userTime: developer.userTime }));
+  steps.push(step(isDf96 ? 'Monobath' : 'Developer', developer.seconds, parts(devLabel, `${s.temperature} °C`), developer.preset, { isDeveloper: true, userTime: developer.userTime, kind: 'developer' }));
   const warnings = [...developer.warnings];
   if (!isDf96) {
     const stop = bath('Stop', s.stop);
     const fixer = bath('Fixer', s.fixer);
-    steps.push(step('Stop bath', timeFor(stop), parts(stop.label, stop.note), 'rotary'));
-    steps.push(step('Fixer', timeFor(fixer), parts(fixer.label, fixer.note), 'fix'));
+    steps.push(step('Stop bath', timeFor(stop), parts(stop.label, stop.note), 'rotary', { kind: 'stop' }));
+    steps.push(step('Fixer', timeFor(fixer), parts(fixer.label, fixer.note), 'fix', { kind: 'fixer' }));
     if (isFormulary(s.fixer) && s.stop !== 'Running water rinse') warnings.push('Formulary recommends a 1 min water rinse instead of an acid stop.');
     if (s.hypo !== 'None') {
       const hypo = bath('Hypo clear', s.hypo);
-      steps.push(step('Hypo clear', timeFor(hypo), parts(hypo.label, hypo.note), 'fix'));
+      steps.push(step('Hypo clear', timeFor(hypo), parts(hypo.label, hypo.note), 'fix', { kind: 'hypo' }));
     }
   }
   steps.push(step('Wash', 300, washNote(s, isDf96), null));
   if (s.wetting !== 'None') {
     const wetting = bath('Wetting', s.wetting);
-    steps.push(step('Wetting agent', timeFor(wetting), parts(wetting.label, wetting.note), 'once'));
+    steps.push(step('Wetting agent', timeFor(wetting), parts(wetting.label, wetting.note), 'once', { kind: 'wetting' }));
   }
-  return { steps, info: developer.info, warnings, source: developer.source };
+  warnings.push(...bottleWarnings(s, bottles, steps));
+  return { steps, info, warnings, source: developer.source };
 }
 
 function pushedSeconds(seconds, rule, min = 0) {
@@ -103,24 +140,26 @@ function pushedSeconds(seconds, rule, min = 0) {
   return roundTo5(seconds * rule.times);
 }
 
-function colourPlan(s) {
+function colourPlan(s, bottles) {
   const kit = currentKit(s);
   const details = kitDetails(kit);
   const steps = kit.steps.map((row) => step(row.name, row.seconds, row.note, row.preset, { optional: row.optional, skipped: row.skipped }));
   const developer = steps.find((row) => /developer/i.test(row.name));
   developer.isDeveloper = true;
+  developer.kind = 'kit'; // the kit is counted once, when its developer step finishes
   const info = [`${developer.name}: ${developer.sub}.`];
   const rule = details.push[s.push];
   if (s.push !== 'box' && rule) {
     developer.seconds = pushedSeconds(developer.seconds, rule, details.push.min);
     info.push(`${PUSH_LABELS.find(([key]) => key === s.push)[1]}: ${developer.name.toLowerCase()} ${formatTime(developer.seconds)}.`);
   }
+  applyReuse(developer, developer.name, s, bottles, 'kit', info);
   info.push(details.note);
   const film = currentColourFilm(s);
   if (/^CineStill/.test(film) && s.process === 'c41') info.push('CineStill films run in standard C-41.');
   if (/XP2/.test(film)) info.push('XP2 Super is chromogenic B&W and runs in C-41.');
-  return { steps, info, warnings: [], source: details.source };
+  return { steps, info, warnings: bottleWarnings(s, bottles, steps), source: details.source };
 }
 
-/** Steps and notes for the current settings. */
-export const buildPlan = (s) => (s.process === 'bw' ? bwPlan(s) : colourPlan(s));
+/** Steps and notes for the current settings. bottles: Map id → bottle, for reuse times and warnings. */
+export const buildPlan = (s, bottles = new Map()) => (s.process === 'bw' ? bwPlan(s, bottles) : colourPlan(s, bottles));

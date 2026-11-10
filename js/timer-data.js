@@ -54,6 +54,8 @@ export const BATHS = {
     {"label": "Kodak Kodafix 1+3", "normal": 240, "tgrain": 600, "note": "Tri-X 2–4, T-Max 5–10 min", "source": "Kodak F-4017, T-Max 400"},
     {"label": "Formulary TF-4 (alkaline)", "normal": 240, "tgrain": 360, "note": "3–4 min, T-Max 6 min", "source": "Formulary TF-4"},
     {"label": "Formulary TF-5 (alkaline)", "normal": 240, "tgrain": 360, "note": "3–4 min, T-Max 6 min", "source": "Formulary TF-5"},
+    {"label": "Adox Adofix P II (used as mixed)", "normal": 240, "tgrain": 300, "note": "4 min film; no further dilution", "source": "Adox (retailer listings)"},
+    {"label": "Adox Adofix Plus 1+4", "normal": 300, "tgrain": 300, "note": "Time from the bottle; 5 min to be safe", "source": ""},
   ],
   "Hypo clear": [
     {"label": "None", "normal": null, "tgrain": null, "note": "", "source": ""},
@@ -62,6 +64,7 @@ export const BATHS = {
   "Wetting": [
     {"label": "Kodak Photo-Flo 200 (1+200)", "normal": 30, "tgrain": 30, "note": "1+200, 30 s", "source": "Kodak E-103CF"},
     {"label": "Ilford Ilfotol (1+200)", "normal": 30, "tgrain": 30, "note": "5 ml/L; Ilford gives no time", "source": "Ilford Delta 100"},
+    {"label": "Adox Adoflo II (1+200)", "normal": 30, "tgrain": 30, "note": "5 ml/L; use the dilution up within days", "source": "Adox"},
     {"label": "Distilled water rinse", "normal": 60, "tgrain": 60, "note": "Prevents water spots", "source": ""},
     {"label": "None", "normal": null, "tgrain": null, "note": "", "source": ""},
   ],

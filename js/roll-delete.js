@@ -3,6 +3,7 @@
 
 import { noteDeleted } from './deletions.js';
 import { reserveId } from './ids.js';
+import { withThumbs } from './image-kinds.js';
 
 const negativeImages = (n) => [n.scanBlobId, n.thumbBlobId, n.editBlobId, n.editThumbBlobId, n.refThumbBlobId];
 const shotImages = (s) => [s.refPhotoBlobId, s.refThumbBlobId];
@@ -25,7 +26,7 @@ export function deleteRoll(db, rollId) {
     // A negative moved to another roll can still show a reference photo from this roll's log.
     const stillUsed = new Set((await t.getAll('negatives')).flatMap(negativeImages));
     const images = new Set([...negatives.flatMap(negativeImages), ...shots.flatMap(shotImages)].filter((id) => id && !stillUsed.has(id)));
-    for (const id of images) await t.remove('blobs', id);
+    for (const id of withThumbs([...images])) await t.remove('blobs', id);
 
     return { negatives: negatives.length, shots: shots.length, images: images.size };
   });

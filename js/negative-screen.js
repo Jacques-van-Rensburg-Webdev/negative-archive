@@ -4,12 +4,12 @@
 import { groupStrips, loadArchive, sortFrames, toFrame, watch } from './archive-data.js';
 import { getDb } from './db.js';
 import { renderFilmStrip } from './film-strip.js';
-import { blobUrl, previewUrls } from './files.js';
 import { inlineSetRow } from './inline-set.js';
 import { attachControls, noPreview } from './negative-attach.js';
 import { detailSections, el, heading, shotSection, statusPills } from './negative-sections.js';
 import { postBlock } from './post-block.js';
 import { frameLayout } from './formats.js';
+import { showPreview } from './previews.js';
 import { lightingText } from './shots.js';
 
 const VERSIONS = [['negative', 'Negative'], ['scan', 'Scan'], ['edit', 'Edit']];
@@ -28,23 +28,23 @@ function stepButton(label, icon, targetId) {
 }
 
 // Image area (full-bleed): the chosen version, or a button to attach the file.
-async function imageArea(db, n, version, state, report) {
+function imageArea(db, n, version, state, report) {
   const area = el('div', 'full-bleed flush-top negative-image');
   const isEdit = version === 'edit';
-  const scanUrl = await blobUrl(db, n.thumbBlobId || n.scanBlobId);
+  const scanId = n.thumbBlobId || n.scanBlobId;
   // Until a scan is attached, Scan / Negative show the Shoot reference photo
-  const refUrl = !isEdit && !scanUrl ? await blobUrl(db, n.refThumbBlobId) : undefined;
-  const url = isEdit ? await blobUrl(db, n.editThumbBlobId || n.editBlobId) : scanUrl || refUrl;
+  const refId = !isEdit && !scanId ? n.refThumbBlobId : undefined;
+  const imageId = isEdit ? n.editThumbBlobId || n.editBlobId : scanId || refId;
   const fileName = isEdit ? n.editedFile : n.scanFile;
   const kind = isEdit ? 'edit' : 'scan';
   const hasFile = Boolean(isEdit ? n.editBlobId : n.scanBlobId);
   const fallback = () => (hasFile ? [noPreview(kind, fileName)] : attachControls(db, n, kind, fileName, state.busy, report));
-  if (refUrl) area.append(el('span', 'negative-image-note text-xs', 'Reference photo from Shoot'));
-  if (url) {
+  if (refId) area.append(el('span', 'negative-image-note text-xs', 'Reference photo from Shoot'));
+  if (imageId) {
     const img = el('img', `negative-image-img${version === 'negative' ? ' is-inverted-image' : ''}`);
     img.alt = `${n.subject || n.id}, ${version}`;
-    img.src = url;
-    img.addEventListener('error', () => img.replaceWith(...fallback()));
+    img.addEventListener('error', () => img.replaceWith(...fallback())); // no stored image, or one this browser can't show
+    showPreview(img, imageId, { full: true });
     area.append(img);
   } else {
     area.append(...fallback());
@@ -71,14 +71,14 @@ function versionSwitch(current) {
   return group;
 }
 
-function whereFiled(db, n, roll, rollNegatives, urls) {
+function whereFiled(db, n, roll, rollNegatives) {
   const layout = frameLayout(roll);
   const strips = groupStrips(rollNegatives, layout.perStrip);
   const index = strips.findIndex((s) => s.negatives.some((x) => x.id === n.id));
   const group = el('div', 'field-group');
   const stripBlock = el('div', 'field-group-media');
   if (index >= 0) {
-    stripBlock.append(renderFilmStrip(strips[index].negatives.map((x) => toFrame(x, urls)), { selected: n.id, label: `Strip ${strips[index].strip}`, layout }));
+    stripBlock.append(renderFilmStrip(strips[index].negatives.map(toFrame), { selected: n.id, label: `Strip ${strips[index].strip}`, layout }));
   }
   const rollRow = el('a', 'field-row field-row-link');
   rollRow.href = `#/roll/${encodeURIComponent(n.rollId)}`;
@@ -122,13 +122,13 @@ async function fill(root, db, id, state, ctx) {
     if (line) { line.textContent = text; line.hidden = !text; }
     root.querySelectorAll('.negative-image-attach').forEach((button) => { button.disabled = busy; });
   };
-  const image = await imageArea(db, n, state.version, state, report);
+  const image = imageArea(db, n, state.version, state, report);
   const switcher = el('div', 'mt-2');
   switcher.append(versionSwitch(state.version));
-  switcher.addEventListener('change', async (event) => {
+  switcher.addEventListener('change', (event) => {
     state.version = event.target.dataset.version;
     report('', state.busy);
-    root.querySelector('.negative-image').replaceWith(await imageArea(db, n, state.version, state, report));
+    root.querySelector('.negative-image').replaceWith(imageArea(db, n, state.version, state, report));
   });
 
   // Image at 0, switch space-2 below, heading space-3 below that, pills space-2 below.
@@ -147,11 +147,10 @@ async function fill(root, db, id, state, ctx) {
   edit.href = `#/negative/${encodeURIComponent(n.id)}/edit`;
 
   const names = { camera: cameras.get(n.cameraId), lens: lenses.get(n.lensId) };
-  const urls = await previewUrls(db, rollNegatives.filter((x) => x.strip === n.strip));
   const shot = n.shotId ? await db.get('shots', n.shotId) : undefined;
   const shotBlock = shot ? [shotSection(shot, lenses.get(shot.lensId), lightingText(shot.lighting))] : [];
   const info = el('div', 'negative-info');
-  info.append(head, whereFiled(db, n, roll, rollNegatives, urls), ...shotBlock, ...detailSections(n, roll, names), edit, postBlock(db, n));
+  info.append(head, whereFiled(db, n, roll, rollNegatives), ...shotBlock, ...detailSections(n, roll, names), edit, postBlock(db, n));
   root.replaceChildren(media, info);
 }
 

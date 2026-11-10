@@ -1,10 +1,10 @@
 // Builds one film strip (up to 6 frames) from frame data.
-// frames: [{ frame: '6', id: '2026-0078', status: 'to-edit' | 'edited' | null, flags: ['U'], image?: url }]
+// frames: [{ frame: '6', id: '2026-0078', status: 'to-edit' | 'edited' | null, flags: ['U'], image?: stored preview ID }]
 // options.selected: id of the frame to outline. options.href(frame): link for each frame.
 // options.interactive = false: frames are plain pictures (for a strip inside a link, e.g. a roll card).
 // options.layout = { perStrip, aspect }: frames per strip and frame shape (from formats.js; 35mm by default).
 
-import { lazyBackground } from './lazy-images.js';
+import { showPreview } from './previews.js';
 
 const STATUS_TEXT = { 'to-edit': 'to edit', edited: 'edited' };
 const FLAG_TEXT = { U: 'underexposed', O: 'overexposed', S: 'soft' };
@@ -30,7 +30,7 @@ function renderFrame(data, { selected, href, interactive = true }) {
 
   const image = document.createElement('span');
   image.className = `film-frame-image${data.draft ? ' is-draft' : ''}`;
-  if (data.image) lazyBackground(image, data.image);
+  showPreview(image, data.image);
   if (data.status) {
     const dot = document.createElement('span');
     dot.className = `film-frame-dot is-${data.status}`;

@@ -7,7 +7,6 @@ import {
 import { backupAgeText, backupOverdue, backupStatus } from './backup.js';
 import { getDb } from './db.js';
 import { renderFilmStrip } from './film-strip.js';
-import { previewUrls } from './files.js';
 import { frameLayout, formatText } from './formats.js';
 import { replaceQuery } from './router.js';
 
@@ -64,7 +63,7 @@ function notLoggedCard(roll, shotCount) {
   return card;
 }
 
-function rollCard(roll, negatives, urls) {
+function rollCard(roll, negatives) {
   const counts = countNegatives(negatives);
   const card = el('a', 'roll-card');
   card.href = `#/roll/${encodeURIComponent(roll.id)}`;
@@ -76,7 +75,7 @@ function rollCard(roll, negatives, urls) {
   head.append(el('span', 'roll-card-id', roll.id), text, el('span', 'text-xs text-muted', `${counts.frames} fr`));
 
   const layout = frameLayout(roll);
-  const strip = renderFilmStrip(sortFrames(negatives).slice(0, layout.perStrip).map((n) => toFrame(n, urls)), { interactive: false, layout });
+  const strip = renderFilmStrip(sortFrames(negatives).slice(0, layout.perStrip).map(toFrame), { interactive: false, layout });
 
   const foot = el('span', 'roll-card-foot');
   const progress = el('span', 'progress');
@@ -119,8 +118,6 @@ async function fill(root, db, state) {
   const byRoll = groupByRoll(negatives);
   const totals = countNegatives(negatives);
   const ordered = sortRollsNewestFirst(rolls, byRoll);
-  const firstFrames = ordered.flatMap((roll) => sortFrames(byRoll.get(roll.id) || []).slice(0, 6));
-  const urls = await previewUrls(db, firstFrames);
 
   const tiles = [
     statTile(totals.frames, 'negatives'),
@@ -134,7 +131,7 @@ async function fill(root, db, state) {
   const empty = ordered.filter((roll) => !byRoll.has(roll.id));
   const logged = ordered.filter((roll) => byRoll.has(roll.id));
   empty.forEach((roll) => list.append(notLoggedCard(roll, shotCounts.get(roll.id) || 0)));
-  logged.forEach((roll) => list.append(rollCard(roll, byRoll.get(roll.id), urls)));
+  logged.forEach((roll) => list.append(rollCard(roll, byRoll.get(roll.id))));
   if (!rolls.length) {
     const tabName = PROCESS_TABS.find(([key]) => key === process)[1];
     const note = el('p', 'empty-state text-sm text-muted', process === 'all' ? 'No rolls yet. Import the spreadsheet or restore a backup from Data (the gear, top right).' : `No ${tabName} rolls yet.`);

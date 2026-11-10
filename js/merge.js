@@ -5,7 +5,7 @@ import { backupBlobs } from './backup.js';
 import { STORES } from './db.js';
 import { DELETIONS_KEY, readDeletions } from './deletions.js';
 import { idYear, nextNegativeId, parseId } from './ids.js';
-import { FULL_FIELDS, THUMB_FIELDS, fullSizeIds, imageIds } from './image-kinds.js';
+import { FULL_FIELDS, THUMB_FIELDS, fullSizeIds, imageIds, withThumbs } from './image-kinds.js';
 import { isSameNegative, mergeRoll, pickNegative, pickShot, withCurrentNames } from './merge-records.js';
 
 const GEAR = [['cameras', 'id'], ['lenses', 'id'], ['filmStocks', 'name'], ['lightingItems', 'id']];
@@ -120,7 +120,7 @@ export function planMerge(local, incoming, imageSizes) {
   const full = fullSizeIds(finalRecords);
   const have = new Set(local.blobKeys);
   const images = imageSizes.filter((b) => used.has(b.id) && !have.has(b.id)).map((b) => ({ ...b, full: full.has(b.id) }));
-  const imageRemoves = [...imageIds([...removedNegatives, ...removedShots], [...THUMB_FIELDS, ...FULL_FIELDS])].filter((id) => !used.has(id));
+  const imageRemoves = withThumbs([...imageIds([...removedNegatives, ...removedShots], [...THUMB_FIELDS, ...FULL_FIELDS])].filter((id) => !used.has(id)));
   summary.fullImages = images.filter((b) => b.full).length;
   summary.fullSize = images.filter((b) => b.full).reduce((sum, b) => sum + b.size, 0);
   summary.images = images.length;

@@ -3,8 +3,8 @@
 
 import { formatMonth, loadArchive, watch } from './archive-data.js';
 import { getDb } from './db.js';
-import { previewUrls } from './files.js';
-import { lazyBackground } from './lazy-images.js';
+import { previewId } from './files.js';
+import { showPreview } from './previews.js';
 import { replaceQuery } from './router.js';
 import {
   FACETS, applySearch, buildEntries, facetOptions, hasLightingData, isEmptyState, valueLabel,
@@ -35,12 +35,12 @@ function optionChip({ label, count }, isSet, onPick) {
   return chip;
 }
 
-function resultRow(entry, url) {
+function resultRow(entry) {
   const n = entry.negative;
   const row = el('a', 'grid grid-inner list-row');
   row.href = `#/negative/${encodeURIComponent(n.id)}`;
   const thumb = el('span', 'span-1 thumbnail');
-  if (url) lazyBackground(thumb, url);
+  showPreview(thumb, previewId(n));
   const text = el('span', 'span-3 stack-0-5');
   const meta = [entry.film, formatMonth(entry.month) || n.dateTaken, (n.location || '').split(',')[0]].filter(Boolean).join(' · ');
   text.append(
@@ -156,7 +156,7 @@ function render({ query }) {
     panel.replaceChildren(card);
   };
 
-  const renderResults = async () => {
+  const renderResults = () => {
     const found = applySearch(entries, state);
     // Results line space-3 below the chips / panel (grid gap space-2 + space-1)
     const head = el('div', 'results-head mt-1');
@@ -165,9 +165,8 @@ function render({ query }) {
       results.replaceChildren(head, el('p', 'empty-state text-sm text-muted', 'No negatives match. Try fewer filters or another keyword.'));
       return;
     }
-    const urls = db ? await previewUrls(db, found.map((e) => e.negative)) : new Map();
     const list = el('div');
-    found.forEach((entry) => list.append(resultRow(entry, urls.get(entry.negative.id))));
+    found.forEach((entry) => list.append(resultRow(entry)));
     results.replaceChildren(head, list);
   };
 

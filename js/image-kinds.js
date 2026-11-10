@@ -3,6 +3,12 @@
 export const THUMB_FIELDS = ['thumbBlobId', 'editThumbBlobId', 'refThumbBlobId'];
 export const FULL_FIELDS = ['scanBlobId', 'editBlobId', 'refPhotoBlobId'];
 
+/** The small thumbnail made from a preview, stored beside it (never written into records). */
+export const thumbId = (previewId) => `${previewId}-s`;
+
+/** The IDs with their thumbnails, for removing images. */
+export const withThumbs = (ids) => ids.filter(Boolean).flatMap((id) => [id, thumbId(id)]);
+
 /** The image IDs a set of negatives and shots use in the given fields. */
 export const imageIds = (records, fields) => new Set(records.flatMap((r) => fields.map((f) => r[f])).filter(Boolean));
 

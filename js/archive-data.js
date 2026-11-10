@@ -2,6 +2,7 @@
 // Counts, strips, frame order and display text, worked out from rolls and negatives.
 
 import { onChange } from './db.js';
+import { previewId } from './files.js';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -43,14 +44,14 @@ export function groupStrips(negatives, perStrip = 6) {
   return [...strips].sort((a, b) => a[0] - b[0]).map(([strip, list]) => ({ strip, negatives: list }));
 }
 
-/** Frame data for renderFilmStrip(). urls: Map of negative ID → thumbnail URL. */
-export function toFrame(n, urls) {
+/** Frame data for renderFilmStrip(). image is the stored preview's ID; the strip loads it when near the screen. */
+export function toFrame(n) {
   const flags = [];
   if (n.exposure === 'Under') flags.push('U');
   if (n.exposure === 'Over') flags.push('O');
   if (n.focus === 'Soft' || n.focus === 'Out of focus') flags.push('S');
   const status = isToEdit(n) ? 'to-edit' : isEdited(n) ? 'edited' : null;
-  return { frame: n.frameLabel || String(n.frame ?? '–'), id: n.id, status, flags, image: urls?.get(n.id), draft: n.status === 'draft' };
+  return { frame: n.frameLabel || String(n.frame ?? '–'), id: n.id, status, flags, image: previewId(n), draft: n.status === 'draft' };
 }
 
 /** 'Berlin, Germany' → 'Berlin'; distinct places in first-seen order. */
@@ -89,10 +90,10 @@ export function loadArchive(db) {
   }));
 }
 
-/** Calls fn after every database write until root leaves the page. */
+/** Calls fn after every database write (other than to images alone) until root leaves the page. */
 export function watch(root, db, fn) {
-  const stop = onChange(({ name }) => {
+  const stop = onChange(({ name, stores }) => {
     if (!root.isConnected) { stop(); return; }
-    if (name === db.name) fn();
+    if (name === db.name && !stores.every((store) => store === 'blobs')) fn();
   });
 }

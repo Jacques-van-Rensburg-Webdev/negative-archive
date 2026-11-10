@@ -3,8 +3,8 @@
 
 import { loadArchive, watch } from './archive-data.js';
 import { getDb } from './db.js';
-import { lazyBackground } from './lazy-images.js';
-import { previewUrls } from './files.js';
+import { previewId } from './files.js';
+import { showPreview } from './previews.js';
 import { LISTS, markDone, queueCounts, queueGroups, undoDone } from './queue.js';
 import { replaceQuery } from './router.js';
 
@@ -35,12 +35,12 @@ function switcher(list, counts) {
 }
 
 // Row: thumbnail + text link (columns 1–3), ✓ button (column 4)
-function row(n, url, list, onDone) {
+function row(n, list, onDone) {
   const item = el('div', 'grid grid-inner list-row');
   const link = el('a', 'span-3 grid-3');
   link.href = `#/negative/${encodeURIComponent(n.id)}`;
   const thumb = el('span', 'span-1 thumbnail');
-  if (url) lazyBackground(thumb, url);
+  showPreview(thumb, previewId(n));
   const text = el('span', 'span-2 stack-0-5');
   text.append(el('span', 'text-xs text-muted text-mono', `${n.id} · fr ${n.frameLabel || n.frame || '–'}`), el('span', 'text-sm text-bold list-row-title', n.subject || 'No subject'));
   if (n.notes) text.append(el('span', 'text-sm text-edge list-row-note', n.notes));
@@ -89,7 +89,6 @@ function render({ query }) {
     const { rolls, negatives } = await loadArchive(db);
     top.replaceChildren(switcher(state.list, queueCounts(negatives)));
     const groups = queueGroups(negatives, rolls, state.list);
-    const urls = await previewUrls(db, groups.flatMap((g) => g.negatives));
     if (!groups.length) {
       body.replaceChildren(el('p', 'empty-state text-sm text-muted', LISTS[state.list].empty));
       return;
@@ -99,7 +98,7 @@ function render({ query }) {
       const head = el('div', 'results-head');
       head.append(el('h2', 'section-label', `${roll.id} · ${roll.filmStock || ''}`), el('span', 'text-xs text-muted', `${items.length} left`));
       const list = el('div');
-      items.forEach((n) => list.append(row(n, urls.get(n.id), state.list, onDone)));
+      items.forEach((n) => list.append(row(n, state.list, onDone)));
       block.append(head, list);
       return block;
     }));

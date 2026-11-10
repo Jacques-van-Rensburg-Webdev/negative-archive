@@ -2,8 +2,8 @@
 // film-edge band, like / share / save, caption (editable from the … menu), gear tags, link.
 
 import { formatMonth } from './archive-data.js';
-import { blobUrl } from './files.js';
 import { setCaption, toggleLike, toggleSave, unpostNegative } from './feed.js';
+import { showPreview } from './previews.js';
 
 const ICONS = {
   heart: '<svg class="tab-icon" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>',
@@ -63,12 +63,10 @@ export async function postCard(db, initial, roll, names, onRemoved) {
 
   // Image at its own shape; 3:2 placeholder when nothing is attached
   const figure = el('div', 'post-image');
-  const url = await blobUrl(db, imageBlobId(n));
-  if (url) {
+  if (imageBlobId(n)) {
     const img = el('img');
-    img.src = url;
     img.alt = n.caption || n.subject || n.id;
-    img.loading = 'lazy';
+    showPreview(img, imageBlobId(n), { full: true }); // loads when the card scrolls near
     figure.append(img);
   } else {
     figure.append(el('span', 'post-image-placeholder text-sm text-muted', 'No image attached'));

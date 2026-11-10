@@ -6,9 +6,9 @@ import {
 } from './archive-data.js';
 import { getDb } from './db.js';
 import { renderFilmStrip } from './film-strip.js';
-import { previewUrls } from './files.js';
+import { previewId } from './files.js';
 import { inlineSetRow } from './inline-set.js';
-import { lazyBackground } from './lazy-images.js';
+import { showPreview } from './previews.js';
 import { deleteRollBlock } from './roll-delete.js';
 import { replaceQuery } from './router.js';
 import { frameLayout, formatText } from './formats.js';
@@ -30,28 +30,27 @@ function statTile(value, label, attention = false) {
   return tile;
 }
 
-function contactSheet(negatives, urls, inverted, layout) {
+function contactSheet(negatives, inverted, layout) {
   const sheet = el('div', `stack-2${inverted ? ' is-inverted' : ''}`);
   const strips = groupStrips(negatives, layout.perStrip);
   strips.forEach(({ strip, negatives: frames }) => {
     const block = el('div', 'stack-1');
     block.append(
       el('h3', 'section-label', `Strip ${strip}`),
-      renderFilmStrip(frames.map((n) => toFrame(n, urls)), { label: `Strip ${strip} of ${strips.length}`, layout }),
+      renderFilmStrip(frames.map(toFrame), { label: `Strip ${strip} of ${strips.length}`, layout }),
     );
     sheet.append(block);
   });
   return sheet;
 }
 
-function listView(negatives, urls) {
+function listView(negatives) {
   const list = el('div', 'stack-1');
   sortFrames(negatives).forEach((n) => {
     const row = el('a', 'grid grid-inner list-row');
     row.href = `#/negative/${encodeURIComponent(n.id)}`;
     const thumb = el('span', 'span-1 thumbnail');
-    const url = urls.get(n.id);
-    if (url) lazyBackground(thumb, url);
+    showPreview(thumb, previewId(n));
     const text = el('span', 'span-3 stack-0-5');
     text.append(
       el('span', 'text-xs text-muted text-mono', `${n.id} · fr ${n.frameLabel || n.frame || '–'}${n.status === 'draft' ? ' · draft' : ''}`),
@@ -105,7 +104,6 @@ async function fill(root, db, rollId, state) {
   const negatives = all.filter((n) => n.rollId === rollId);
   const sorted = sortFrames(negatives);
   const counts = countNegatives(negatives);
-  const urls = await previewUrls(db, negatives);
   const ids = [...negatives.map((n) => n.id)].sort();
 
   // Content, columns 1–4, at 24: roll details
@@ -143,7 +141,7 @@ async function fill(root, db, rollId, state) {
   const body = el('div', 'span-4');
   const showView = () => {
     body.replaceChildren(
-      state.view === 'list' ? listView(negatives, urls) : contactSheet(negatives, urls, state.view === 'negative', frameLayout(roll)),
+      state.view === 'list' ? listView(negatives) : contactSheet(negatives, state.view === 'negative', frameLayout(roll)),
     );
   };
   switcher.addEventListener('change', (event) => {

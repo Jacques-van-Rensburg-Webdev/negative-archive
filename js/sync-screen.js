@@ -2,8 +2,8 @@
 // draft negatives in the archive.
 
 import { getDb } from './db.js';
-import { blobUrl } from './files.js';
 import { idYear, previewNextId, seriesForRoll, formatId, parseId } from './ids.js';
+import { showPreview } from './previews.js';
 import { shotsForRoll } from './shots.js';
 import { applySync, planSync } from './sync.js';
 
@@ -56,7 +56,6 @@ function render({ query }) {
       const negatives = await db.byIndex('negatives', 'rollId', roll.id);
       const rows = planSync(shots, roll, negatives, state);
       const ids = await upcomingIds(db, roll, rows);
-      const refs = await Promise.all(rows.map((r) => blobUrl(db, r.shot.refThumbBlobId || r.shot.refPhotoBlobId)));
       const updating = rows.filter((r) => r.negativeId).length;
       const photos = shots.filter((s) => s.refPhotoBlobId).length;
       const synced = shots.length && updating === shots.length ? 'all in the archive' : updating ? `${updating} already in the archive` : 'not synced yet';
@@ -86,7 +85,7 @@ function render({ query }) {
           ${rows.map((r, i) => `
             <div class="field-group">
               <div class="grid grid-inner list-row sync-row">
-                <span class="span-1 thumbnail"${refs[i] ? ` style="background-image: url('${refs[i]}')"` : ''}></span>
+                <span class="span-1 thumbnail" data-ref="${i}"></span>
                 <span class="span-3 stack-0-5">
                   <span class="text-xs text-mono text-muted">${esc(ids[i])}${r.negativeId ? ' · update' : ' · new'}</span>
                   <span class="text-sm text-bold">Shot ${r.shot.shotNumber} → strip ${r.position.strip}, frame ${r.position.frame}</span>
@@ -112,6 +111,10 @@ function render({ query }) {
           ${updating ? `<a class="button button-secondary button-block" href="#/roll/${encodeURIComponent(roll.id)}">Open ${esc(roll.id)} in the archive</a>` : ''}
         </section>`;
 
+      root.querySelectorAll('[data-ref]').forEach((thumb) => {
+        const { shot } = rows[Number(thumb.dataset.ref)];
+        showPreview(thumb, shot.refThumbBlobId || shot.refPhotoBlobId);
+      });
       root.querySelectorAll('[data-first]').forEach((b) => b.addEventListener('click', () => {
         state.first = Math.max(1, state.first + Number(b.dataset.first));
         state.message = '';

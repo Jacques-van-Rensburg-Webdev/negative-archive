@@ -88,22 +88,43 @@ export const backupBlobs = (backup) => (backup.format === JSON_FORMAT
   ? backup.stores.blobs.map(({ data, type, ...rest }) => ({ ...rest, blob: base64ToBlob(data, type) }))
   : backup.stores.blobs);
 
-/** Replaces the whole database with the backup. Resolves with item counts per store. */
-export async function restoreBackup(db, backup) {
+/**
+ * Stores a backup's pictures one at a time, each with its bytes read into memory first. A picture read
+ * from a chosen file is only a reference to that file, and iOS doesn't reliably keep such data in
+ * IndexedDB. One picture at a time keeps memory low; onProgress(done, total) reports each one.
+ */
+export async function copyImages(db, entries, onProgress) {
+  let done = 0;
+  for (const entry of entries) {
+    const bytes = await entry.blob.arrayBuffer();
+    await db.put('blobs', { ...entry, blob: new Blob([bytes], { type: entry.blob.type }) });
+    done += 1;
+    onProgress?.(done, entries.length);
+  }
+  return done;
+}
+
+/**
+ * Replaces the whole database with the backup: the records in one transaction (all or nothing),
+ * then the pictures one by one. Resolves with item counts per store.
+ */
+export async function restoreBackup(db, backup, { onProgress } = {}) {
   const errors = validateBackup(backup);
   if (errors.length) throw new Error(errors.join(' '));
   const blobs = backupBlobs(backup);
-  return db.transaction(STORES, 'readwrite', async (t) => {
-    const counts = {};
+  const counts = await db.transaction(STORES, 'readwrite', async (t) => {
+    const result = { blobs: blobs.length };
     for (const name of STORES) {
       await t.clear(name);
-      const items = name === 'blobs' ? blobs : backup.stores[name];
-      for (const item of items) await t.put(name, item);
-      counts[name] = items.length;
+      if (name === 'blobs') continue;
+      for (const item of backup.stores[name]) await t.put(name, item);
+      result[name] = backup.stores[name].length;
     }
     await t.put('meta', { key: 'last-restore', value: { at: new Date().toISOString(), from: backup.exportedAt } });
-    return counts;
+    return result;
   });
+  await copyImages(db, blobs, onProgress);
+  return counts;
 }
 
 /** Saves the backup as a file download, and records when. Resolves with its counts and size. */

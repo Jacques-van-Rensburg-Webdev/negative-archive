@@ -92,12 +92,14 @@ export function initMerge(root, getDatabase, say, formatSize) {
           close.disabled = true;
           const copyFull = !choice || choice.querySelector('[aria-checked="true"]').dataset.value === 'copy';
           try {
-            const done = await applyMerge(db, backup, { copyFull });
+            say('Merging…');
+            const onProgress = (done, total) => say(`Copying pictures ${done} of ${total}…`);
+            const done = await applyMerge(db, backup, { copyFull, onProgress });
             preview.replaceChildren();
-            say(`Merged: ${done.added + done.clashes} added, ${done.updated} updated${done.removed ? `, ${done.removed} removed` : ''}.`);
+            say(`Merged: ${done.added + done.clashes} added, ${done.updated} updated${done.removed ? `, ${done.removed} removed` : ''}, ${done.imagesCopied} picture${done.imagesCopied === 1 ? '' : 's'} copied.`);
           } catch (error) {
             preview.replaceChildren();
-            say(`Merge failed, nothing was changed: ${error.message}`);
+            say(`Merge failed: ${error.message}. Records are saved all or nothing; if pictures were being copied, merge again to copy the rest.`);
           }
         }));
       }

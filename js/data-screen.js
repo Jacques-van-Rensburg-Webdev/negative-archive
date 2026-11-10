@@ -8,6 +8,7 @@ import { initMerge } from './data-merge.js';
 import { getDb, onChange } from './db.js';
 import { applyImport, planImport } from './import.js';
 import { renderImportPreview } from './import-preview.js';
+import { checkPictures, describeCheck } from './picture-check.js';
 import { isInstalled, storageState } from './pwa.js';
 import { APP_VERSION } from './version.js';
 
@@ -47,6 +48,7 @@ const TEMPLATE = `
     <button class="button button-secondary button-block" type="button" data-export>Export backup</button>
     <button class="button button-secondary button-block" type="button" data-restore>Restore from backup</button>
     <button class="button button-secondary button-block" type="button" data-merge>Merge from backup</button>
+    <button class="button button-secondary button-block" type="button" data-check-pictures>Check pictures</button>
     <input type="file" hidden data-restore-input>
     <input type="file" hidden data-merge-input>
     <p class="text-xs text-muted" data-install-hint hidden>Install to the Home Screen (Share → Add to Home Screen) so iPhone keeps your data.</p>
@@ -154,10 +156,21 @@ function renderPage() {
       const when = formatDate(backup.exportedAt);
       const ok = window.confirm(`Replace everything in the app with the backup from ${when} (${backup.stores.negatives.length} negatives)? This can't be undone. Export a backup first if you want to keep what's here.${backup.previewsOnly ? '\n\nThis backup has previews only: full-size scans and edits on this device will be deleted. To keep them, use Merge from backup instead.' : ''}`);
       if (!ok) return;
-      const counts = await restoreBackup(await getDb(), backup);
-      say(`Restored ${counts.negatives} negatives and ${counts.rolls} rolls from ${when}.`, 'backup');
+      say('Restoring…', 'backup');
+      const onProgress = (done, total) => say(`Copying pictures ${done} of ${total}…`, 'backup');
+      const counts = await restoreBackup(await getDb(), backup, { onProgress });
+      say(`Restored ${counts.negatives} negatives, ${counts.rolls} rolls and ${counts.blobs} pictures from ${when}.`, 'backup');
     } catch (error) {
-      say(`Restore failed, nothing was changed: ${error.message}`, 'backup');
+      say(`Restore failed: ${error.message}. Records are saved all or nothing; if pictures were being copied, merge the same backup to copy the rest.`, 'backup');
+    }
+  });
+
+  root.querySelector('[data-check-pictures]').addEventListener('click', async () => {
+    say('Checking pictures…', 'backup');
+    try {
+      say(describeCheck(await checkPictures(await getDb())), 'backup');
+    } catch (error) {
+      say(`Check failed: ${error.message}`, 'backup');
     }
   });
 

@@ -1,7 +1,7 @@
 // Merging a backup into this device: planMerge() works out every change without writing;
 // applyMerge() re-plans and writes it all in one transaction, so it either all works or nothing changes.
 
-import { backupBlobs } from './backup.js';
+import { backupBlobs, copyImages } from './backup.js';
 import { STORES } from './db.js';
 import { DELETIONS_KEY, readDeletions } from './deletions.js';
 import { idYear, nextNegativeId, parseId } from './ids.js';
@@ -133,10 +133,11 @@ export function planMerge(local, incoming, imageSizes) {
   };
 }
 
+// A picture stored without any bytes (it happens on iOS) counts as not here, so a merge brings it again.
 async function readLocal(t) {
   const local = {};
   for (const name of STORES.filter((store) => store !== 'blobs')) local[name] = await t.getAll(name);
-  local.blobKeys = await t.getAllKeys('blobs');
+  local.blobKeys = (await t.getAll('blobs')).filter((b) => b.blob?.size > 0).map((b) => b.id);
   return local;
 }
 
@@ -148,11 +149,14 @@ export async function previewMerge(db, backup) {
   return planMerge(local, backup.stores, sizesOf(backup)).summary;
 }
 
-/** Applies the merge. options.copyFull = false leaves full-size files behind. Resolves with the summary. */
-export function applyMerge(db, backup, { copyFull = true } = {}) {
+/**
+ * Applies the merge: the records in one transaction (all or nothing), then the pictures one by one
+ * (onProgress(done, total)). copyFull = false leaves full-size files behind. Resolves with the summary.
+ */
+export async function applyMerge(db, backup, { copyFull = true, onProgress } = {}) {
   const blobs = new Map(backupBlobs(backup).map((b) => [b.id, b]));
   const sizes = [...blobs.values()].map((b) => ({ id: b.id, size: b.blob.size }));
-  return db.transaction(STORES, 'readwrite', async (t) => {
+  const plan = await db.transaction(STORES, 'readwrite', async (t) => {
     const plan = planMerge(await readLocal(t), backup.stores, sizes);
     for (const id of plan.negativeRemoves) await t.remove('negatives', id);
     for (const id of plan.shotRemoves) await t.remove('shots', id);
@@ -174,9 +178,10 @@ export function applyMerge(db, backup, { copyFull = true } = {}) {
     }
     for (const r of plan.rollPuts) await t.put('rolls', r);
     for (const [store, item] of plan.gearPuts) await t.put(store, item);
-    for (const image of plan.images) if (copyFull || !image.full) await t.put('blobs', blobs.get(image.id));
     await t.put('meta', { key: DELETIONS_KEY, value: plan.deleted });
     await t.put('meta', { key: 'last-merge', value: { at: new Date().toISOString(), from: backup.exportedAt } });
-    return plan.summary;
+    return plan;
   });
+  plan.summary.imagesCopied = await copyImages(db, plan.images.filter((image) => copyFull || !image.full).map((image) => blobs.get(image.id)), onProgress);
+  return plan.summary;
 }
